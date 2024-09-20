@@ -11,23 +11,26 @@ npm install circuit-json-to-pnp-csv
 or
 
 ```bash
-yarn add circuit-json-to-pnp-csv
+bun add circuit-json-to-pnp-csv
 ```
 
 ## Usage
 
 This library provides two main functions:
 
-1. `convertSoupToPickAndPlaceRows`: Converts Circuit JSON elements to an array of Pick'n'Place rows.
-2. `convertSoupToPickAndPlaceCsv`: Converts Circuit JSON elements directly to a CSV string.
+1. `convertCircuitJsonToPickAndPlaceRows`: Converts Circuit JSON elements to an array of Pick'n'Place rows.
+2. `convertCircuitJsonToPickAndPlaceCsv`: Converts Circuit JSON elements directly to a CSV string.
 
 ### Example
 
 ```typescript
-import { convertSoupToPickAndPlaceCsv, convertSoupToPickAndPlaceRows } from 'circuit-json-to-pnp-csv';
-import type { AnyCircuitElement } from 'circuit-json';
+import {
+  convertCircuitJsonToPickAndPlaceCsv,
+  convertCircuitJsonToPickAndPlaceRows,
+} from "circuit-json-to-pnp-csv"
+import type { AnyCircuitElement } from "circuit-json"
 
-const circuitSoup: AnyCircuitElement[] = [
+const circuitJson: AnyCircuitElement[] = [
   {
     type: "pcb_component",
     pcb_component_id: "R1",
@@ -36,23 +39,23 @@ const circuitSoup: AnyCircuitElement[] = [
     rotation: 0,
     width: 5,
     height: 2,
-    source_component_id: "resistor1"
+    source_component_id: "resistor1",
   },
   // ... more components
-];
+]
 
 // Get Pick'n'Place rows
-const rows = convertSoupToPickAndPlaceRows(circuitSoup);
-console.log(rows);
+const rows = convertCircuitJsonToPickAndPlaceRows(circuitSoup)
+console.log(rows)
 
 // Get Pick'n'Place CSV
-const csv = convertSoupToPickAndPlaceCsv(circuitSoup);
-console.log(csv);
+const csv = convertCircuitJsonToPickAndPlaceCsv(circuitSoup)
+console.log(csv)
 ```
 
 ## API
 
-### `convertSoupToPickAndPlaceRows(soup: AnyCircuitElement[], opts?: { flip_y_axis?: boolean }): PickAndPlaceRow[]`
+### `convertCircuitJsonToPickAndPlaceRows(soup: AnyCircuitElement[], opts?: { flip_y_axis?: boolean }): PickAndPlaceRow[]`
 
 Converts Circuit JSON elements to an array of Pick'n'Place rows.
 
@@ -62,7 +65,7 @@ Converts Circuit JSON elements to an array of Pick'n'Place rows.
 
 Returns an array of `PickAndPlaceRow` objects.
 
-### `convertSoupToPickAndPlaceCsv(soup: AnyCircuitElement[]): string`
+### `convertCircuitJsonToPickAndPlaceCsv(soup: AnyCircuitElement[]): string`
 
 Converts Circuit JSON elements directly to a CSV string.
 

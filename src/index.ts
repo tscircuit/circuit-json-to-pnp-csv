@@ -9,7 +9,7 @@ interface PickAndPlaceRow {
   rotation: number
 }
 
-export const convertSoupToPickAndPlaceRows = (
+export const convertCircuitJsonToPickAndPlaceRows = (
   soup: AnyCircuitElement[],
   opts: { flip_y_axis?: boolean } = {},
 ): PickAndPlaceRow[] => {
@@ -30,11 +30,11 @@ export const convertSoupToPickAndPlaceRows = (
   return rows
 }
 
-export const convertSoupToPickAndPlaceCsv = (
+export const convertCircuitJsonToPickAndPlaceCsv = (
   soup: AnyCircuitElement[],
 ): string =>
   Papa.unparse(
-    convertSoupToPickAndPlaceRows(soup).map((row) => ({
+    convertCircuitJsonToPickAndPlaceRows(soup).map((row) => ({
       Designator: row.designator,
       "Mid X": row.mid_x,
       "Mid Y": row.mid_y,
