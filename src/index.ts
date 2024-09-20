@@ -30,7 +30,9 @@ export const convertSoupToPickAndPlaceRows = (
   return rows
 }
 
-export const convertSoupToPickAndPlaceCsv = (soup: AnySoupElement[]): string =>
+export const convertSoupToPickAndPlaceCsv = (
+  soup: AnyCircuitElement[],
+): string =>
   Papa.unparse(
     convertSoupToPickAndPlaceRows(soup).map((row) => ({
       Designator: row.designator,

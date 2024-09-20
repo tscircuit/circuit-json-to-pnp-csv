@@ -9,6 +9,7 @@
     "build": "tsup-node ./src/index.ts --format esm --dts --sourcemap"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.2",
     "@types/bun": "latest",
     "@types/papaparse": "^5.3.14",
     "circuit-json": "^0.0.77",
