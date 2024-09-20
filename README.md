@@ -59,7 +59,7 @@ console.log(csv)
 
 Converts Circuit JSON elements to an array of Pick'n'Place rows.
 
-- `soup`: An array of Circuit JSON elements.
+- `circuitJson`: An array of Circuit JSON elements.
 - `opts`: Optional configuration object.
   - `flip_y_axis`: If true, flips the Y-axis values. Default is `false`.
 
@@ -69,7 +69,7 @@ Returns an array of `PickAndPlaceRow` objects.
 
 Converts Circuit JSON elements directly to a CSV string.
 
-- `soup`: An array of Circuit JSON elements.
+- `circuitJson`: An array of Circuit JSON elements.
 
 Returns a string containing the CSV data.
 

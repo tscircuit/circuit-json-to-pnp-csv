@@ -10,13 +10,13 @@ interface PickAndPlaceRow {
 }
 
 export const convertCircuitJsonToPickAndPlaceRows = (
-  soup: AnyCircuitElement[],
+  circuitJson: AnyCircuitElement[],
   opts: { flip_y_axis?: boolean } = {},
 ): PickAndPlaceRow[] => {
   opts.flip_y_axis ??= false
 
   const rows: PickAndPlaceRow[] = []
-  for (const element of soup) {
+  for (const element of circuitJson) {
     if (element.type === "pcb_component") {
       rows.push({
         designator: element.pcb_component_id,
@@ -31,10 +31,10 @@ export const convertCircuitJsonToPickAndPlaceRows = (
 }
 
 export const convertCircuitJsonToPickAndPlaceCsv = (
-  soup: AnyCircuitElement[],
+  circuitJson: AnyCircuitElement[],
 ): string =>
   Papa.unparse(
-    convertCircuitJsonToPickAndPlaceRows(soup).map((row) => ({
+    convertCircuitJsonToPickAndPlaceRows(circuitJson).map((row) => ({
       Designator: row.designator,
       "Mid X": row.mid_x,
       "Mid Y": row.mid_y,
