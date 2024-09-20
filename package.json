@@ -1,0 +1,23 @@
+{
+  "name": "circuit-json-to-pnp-csv",
+  "module": "dist/index.js",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup-node ./src/index.ts --format esm --dts --sourcemap"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/papaparse": "^5.3.14",
+    "circuit-json": "^0.0.77",
+    "tsup": "^8.3.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "papaparse": "^5.4.1"
+  }
+}
