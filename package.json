@@ -1,7 +1,7 @@
 {
   "name": "circuit-json-to-pnp-csv",
   "module": "dist/index.js",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "types": "dist/index.d.ts",
   "type": "module",
   "files": [
