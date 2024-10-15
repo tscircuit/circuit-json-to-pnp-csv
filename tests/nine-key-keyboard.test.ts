@@ -4,284 +4,80 @@ import nine_key_keyboard from "./assets/nine-key-keyboard.json"
 
 test("nine-key-keyboard", () => {
   const rows = convertCircuitJsonToPickAndPlaceRows(nine_key_keyboard as any)
-  console.log(rows)
-  /*[
-  {
+
+  // Assert the total number of rows
+  expect(rows.length).toBe(46)
+
+  // Assert specific components
+  expect(rows).toContainEqual({
     designator: "U1",
     mid_x: -30,
     mid_y: 0,
     layer: "top",
     rotation: 0,
-  }, {
+  })
+
+  expect(rows).toContainEqual({
     designator: "K1",
     mid_x: 0.9499999999999993,
     mid_y: -19.05,
     layer: "bottom",
     rotation: 0,
-  }, {
-    designator: "K1_shaft",
-    mid_x: 0.9499999999999993,
-    mid_y: -19.57,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "pcb_component_3",
-    mid_x: 0,
-    mid_y: 0,
-    layer: "top",
-    rotation: 0,
-  }, {
+  })
+
+  expect(rows).toContainEqual({
     designator: "D1",
     mid_x: 0.9499999999999993,
     mid_y: -32.05,
     layer: "bottom",
     rotation: 0,
-  }, {
-    designator: "pcb_component_5",
-    mid_x: 0,
-    mid_y: 0,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "K2",
-    mid_x: 20,
-    mid_y: -19.05,
-    layer: "bottom",
-    rotation: 0,
-  }, {
-    designator: "K2_shaft",
-    mid_x: 20,
-    mid_y: -19.57,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "pcb_component_8",
-    mid_x: 0,
-    mid_y: 0,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "D2",
-    mid_x: 20,
-    mid_y: -32.05,
-    layer: "bottom",
-    rotation: 0,
-  }, {
-    designator: "pcb_component_10",
-    mid_x: 0,
-    mid_y: 0,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "K3",
-    mid_x: 39.05,
-    mid_y: -19.05,
-    layer: "bottom",
-    rotation: 0,
-  }, {
-    designator: "K3_shaft",
-    mid_x: 39.05,
-    mid_y: -19.57,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "pcb_component_13",
-    mid_x: 0,
-    mid_y: 0,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "D3",
-    mid_x: 39.05,
-    mid_y: -32.05,
-    layer: "bottom",
-    rotation: 0,
-  }, {
-    designator: "pcb_component_15",
-    mid_x: 0,
-    mid_y: 0,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "K4",
-    mid_x: 0.9499999999999993,
-    mid_y: 0,
-    layer: "bottom",
-    rotation: 0,
-  }, {
-    designator: "K4_shaft",
-    mid_x: 0.9499999999999993,
-    mid_y: -0.52,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "pcb_component_18",
-    mid_x: 0,
-    mid_y: 0,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "D4",
-    mid_x: 0.9499999999999993,
-    mid_y: -13,
-    layer: "bottom",
-    rotation: 0,
-  }, {
-    designator: "pcb_component_20",
-    mid_x: 0,
-    mid_y: 0,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "K5",
-    mid_x: 20,
-    mid_y: 0,
-    layer: "bottom",
-    rotation: 0,
-  }, {
-    designator: "K5_shaft",
-    mid_x: 20,
-    mid_y: -0.52,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "pcb_component_23",
-    mid_x: 0,
-    mid_y: 0,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "D5",
-    mid_x: 20,
-    mid_y: -13,
-    layer: "bottom",
-    rotation: 0,
-  }, {
-    designator: "pcb_component_25",
-    mid_x: 0,
-    mid_y: 0,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "K6",
-    mid_x: 39.05,
-    mid_y: 0,
-    layer: "bottom",
-    rotation: 0,
-  }, {
-    designator: "K6_shaft",
-    mid_x: 39.05,
-    mid_y: -0.52,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "pcb_component_28",
-    mid_x: 0,
-    mid_y: 0,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "D6",
-    mid_x: 39.05,
-    mid_y: -13,
-    layer: "bottom",
-    rotation: 0,
-  }, {
-    designator: "pcb_component_30",
-    mid_x: 0,
-    mid_y: 0,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "K7",
-    mid_x: 0.9499999999999993,
-    mid_y: 19.05,
-    layer: "bottom",
-    rotation: 0,
-  }, {
-    designator: "K7_shaft",
-    mid_x: 0.9499999999999993,
-    mid_y: 18.53,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "pcb_component_33",
-    mid_x: 0,
-    mid_y: 0,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "D7",
-    mid_x: 0.9499999999999993,
-    mid_y: 6.050000000000001,
-    layer: "bottom",
-    rotation: 0,
-  }, {
-    designator: "pcb_component_35",
-    mid_x: 0,
-    mid_y: 0,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "K8",
-    mid_x: 20,
-    mid_y: 19.05,
-    layer: "bottom",
-    rotation: 0,
-  }, {
-    designator: "K8_shaft",
-    mid_x: 20,
-    mid_y: 18.53,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "pcb_component_38",
-    mid_x: 0,
-    mid_y: 0,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "D8",
-    mid_x: 20,
-    mid_y: 6.050000000000001,
-    layer: "bottom",
-    rotation: 0,
-  }, {
-    designator: "pcb_component_40",
-    mid_x: 0,
-    mid_y: 0,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "K9",
-    mid_x: 39.05,
-    mid_y: 19.05,
-    layer: "bottom",
-    rotation: 0,
-  }, {
-    designator: "K9_shaft",
-    mid_x: 39.05,
-    mid_y: 18.53,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "pcb_component_43",
-    mid_x: 0,
-    mid_y: 0,
-    layer: "top",
-    rotation: 0,
-  }, {
-    designator: "D9",
-    mid_x: 39.05,
-    mid_y: 6.050000000000001,
-    layer: "bottom",
-    rotation: 0,
-  }, {
-    designator: "pcb_component_45",
-    mid_x: 0,
-    mid_y: 0,
-    layer: "top",
-    rotation: 0,
+  })
+
+  // Assert the presence of all 9 keys and their shafts
+  for (let i = 1; i <= 9; i++) {
+    expect(rows).toContainEqual(
+      expect.objectContaining({
+        designator: `K${i}`,
+        layer: "bottom",
+        rotation: 0,
+      }),
+    )
+    expect(rows).toContainEqual(
+      expect.objectContaining({
+        designator: `K${i}_shaft`,
+        layer: "top",
+        rotation: 0,
+      }),
+    )
   }
-]*/
+
+  // Assert the presence of all 9 diodes
+  for (let i = 1; i <= 9; i++) {
+    expect(rows).toContainEqual(
+      expect.objectContaining({
+        designator: `D${i}`,
+        layer: "bottom",
+        rotation: 0,
+      }),
+    )
+  }
+
+  // Assert that all components have valid coordinates
+  for (const row of rows) {
+    expect(typeof row.mid_x).toBe("number")
+    expect(typeof row.mid_y).toBe("number")
+    expect(Number.isNaN(row.mid_x)).toBe(false)
+    expect(Number.isNaN(row.mid_y)).toBe(false)
+  }
+
+  // Assert that all components have valid layers
+  for (const row of rows) {
+    expect(["top", "bottom"]).toContain(row.layer)
+  }
+
+  // Assert that all components have valid rotations
+  for (const row of rows) {
+    expect(typeof row.rotation).toBe("number")
+    expect(row.rotation).toBe(0) // In this case, all rotations are 0
+  }
 })
