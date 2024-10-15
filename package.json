@@ -13,12 +13,14 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.2",
+    "@tscircuit/soup-util": "^0.0.38",
     "@types/bun": "latest",
     "@types/papaparse": "^5.3.14",
     "circuit-json": "^0.0.77",
     "tsup": "^8.3.0"
   },
   "peerDependencies": {
+    "@tscircuit/soup-util": "*",
     "typescript": "^5.0.0"
   },
   "dependencies": {
