@@ -1,5 +1,10 @@
-import type { AnyCircuitElement, LayerRef } from "circuit-json"
+import {
+  pcb_component,
+  type AnyCircuitElement,
+  type LayerRef,
+} from "circuit-json"
 import Papa from "papaparse"
+import { su } from "@tscircuit/soup-util"
 
 interface PickAndPlaceRow {
   designator: string
@@ -18,8 +23,11 @@ export const convertCircuitJsonToPickAndPlaceRows = (
   const rows: PickAndPlaceRow[] = []
   for (const element of circuitJson) {
     if (element.type === "pcb_component") {
+      const source_component = su(circuitJson).source_component.get(
+        element.source_component_id,
+      )
       rows.push({
-        designator: element.pcb_component_id,
+        designator: source_component?.name ?? element.pcb_component_id,
         mid_x: element.center.x,
         mid_y: element.center.y * (opts.flip_y_axis ? -1 : 1),
         layer: element.layer,
