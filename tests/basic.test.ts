@@ -54,7 +54,7 @@ describe("circuit-json-to-pnp-csv", () => {
   test("convertCircuitJsonToPickAndPlaceCsv", () => {
     const csv = convertCircuitJsonToPickAndPlaceCsv(sampleSoup)
     const expectedCsv =
-      "Designator,Mid X,Mid Y,Layer,Rotation\r\nR1,10,20,top,0\r\nC1,30,40,bottom,90"
+      "Designator,Mid X,Mid Y,Layer,Rotation\r\nR1,10.000,20.000,top,0\r\nC1,30.000,40.000,bottom,90"
     expect(csv).toBe(expectedCsv)
   })
 

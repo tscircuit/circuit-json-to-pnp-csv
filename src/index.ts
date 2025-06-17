@@ -14,6 +14,8 @@ interface PickAndPlaceRow {
   rotation: number
 }
 
+const fixedDecimals = 3
+
 export const convertCircuitJsonToPickAndPlaceRows = (
   circuitJson: AnyCircuitElement[],
   opts: { flip_y_axis?: boolean } = {},
@@ -44,8 +46,8 @@ export const convertCircuitJsonToPickAndPlaceCsv = (
   Papa.unparse(
     convertCircuitJsonToPickAndPlaceRows(circuitJson).map((row) => ({
       Designator: row.designator,
-      "Mid X": row.mid_x,
-      "Mid Y": row.mid_y,
+      "Mid X": row.mid_x.toFixed(fixedDecimals),
+      "Mid Y": row.mid_y.toFixed(fixedDecimals),
       Layer: row.layer,
       Rotation: row.rotation,
     })),
