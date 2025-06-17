@@ -14,7 +14,7 @@ interface PickAndPlaceRow {
   rotation: number
 }
 
-const fixedDecimals = 7
+const fixedDecimals = 3
 
 export const convertCircuitJsonToPickAndPlaceRows = (
   circuitJson: AnyCircuitElement[],
