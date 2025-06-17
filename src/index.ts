@@ -14,6 +14,8 @@ interface PickAndPlaceRow {
   rotation: number
 }
 
+const fixedDecimals = 7
+
 export const convertCircuitJsonToPickAndPlaceRows = (
   circuitJson: AnyCircuitElement[],
   opts: { flip_y_axis?: boolean } = {},
@@ -28,8 +30,8 @@ export const convertCircuitJsonToPickAndPlaceRows = (
       )
       rows.push({
         designator: source_component?.name ?? element.pcb_component_id,
-        mid_x: element.center.x,
-        mid_y: element.center.y * (opts.flip_y_axis ? -1 : 1),
+        mid_x: element.center.x.toFixed(fixedDecimals),
+        mid_y: (element.center.y * (opts.flip_y_axis ? -1 : 1)).toFixed(fixedDecimals),
         layer: element.layer,
         rotation: element.rotation,
       })
