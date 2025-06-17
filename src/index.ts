@@ -30,8 +30,8 @@ export const convertCircuitJsonToPickAndPlaceRows = (
       )
       rows.push({
         designator: source_component?.name ?? element.pcb_component_id,
-        mid_x: element.center.x.toFixed(fixedDecimals),
-        mid_y: (element.center.y * (opts.flip_y_axis ? -1 : 1)).toFixed(fixedDecimals),
+        mid_x: element.center.x,
+        mid_y: element.center.y * (opts.flip_y_axis ? -1 : 1),
         layer: element.layer,
         rotation: element.rotation,
       })
@@ -46,8 +46,8 @@ export const convertCircuitJsonToPickAndPlaceCsv = (
   Papa.unparse(
     convertCircuitJsonToPickAndPlaceRows(circuitJson).map((row) => ({
       Designator: row.designator,
-      "Mid X": row.mid_x,
-      "Mid Y": row.mid_y,
+      "Mid X": row.mid_x.toFixed(fixedDecimals),
+      "Mid Y": row.mid_y.toFixed(fixedDecimals),
       Layer: row.layer,
       Rotation: row.rotation,
     })),
