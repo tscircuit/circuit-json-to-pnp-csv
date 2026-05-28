@@ -17,7 +17,7 @@
     "@tscircuit/soup-util": "^0.0.38",
     "@types/bun": "latest",
     "@types/papaparse": "^5.3.14",
-    "circuit-json": "^0.0.77",
+    "circuit-json": "^0.0.429",
     "tsup": "^8.3.0"
   },
   "peerDependencies": {

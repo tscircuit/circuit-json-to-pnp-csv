@@ -5,8 +5,11 @@ import nine_key_keyboard from "./assets/nine-key-keyboard.json"
 test("nine-key-keyboard", () => {
   const rows = convertCircuitJsonToPickAndPlaceRows(nine_key_keyboard as any)
 
-  // Assert the total number of rows
-  expect(rows.length).toBe(46)
+  // Assert the total number of assemblable component rows
+  expect(rows.length).toBe(28)
+  expect(rows.some((row) => row.designator.startsWith("pcb_component_"))).toBe(
+    false,
+  )
 
   // Assert specific components
   expect(rows).toContainEqual({
