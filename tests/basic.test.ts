@@ -58,6 +58,31 @@ describe("circuit-json-to-pnp-csv", () => {
     expect(csv).toBe(expectedCsv)
   })
 
+  test("skips pcb components without source components", () => {
+    const rows = convertCircuitJsonToPickAndPlaceRows([
+      ...sampleSoup,
+      {
+        type: "source_manually_placed_via",
+        source_manually_placed_via_id: "source_manually_placed_via_1",
+        source_group_id: "source_group_1",
+        source_net_id: "",
+      },
+      {
+        type: "pcb_component",
+        pcb_component_id: "pcb_component_via_1",
+        center: { x: 50, y: 60 },
+        layer: "top",
+        rotation: 0,
+        width: 0.6096,
+        height: 0.6096,
+        source_component_id: "source_manually_placed_via_1",
+      },
+    ])
+
+    expect(rows).toHaveLength(2)
+    expect(rows.map((row) => row.designator)).toEqual(["R1", "C1"])
+  })
+
   test("convertCircuitJsonToPickAndPlaceRows with flip_y_axis option", () => {
     const rows = convertCircuitJsonToPickAndPlaceRows(sampleSoup, {
       flip_y_axis: true,
