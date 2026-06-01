@@ -1,6 +1,6 @@
-import { type AnyCircuitElement, type LayerRef } from "circuit-json"
-import Papa from "papaparse"
 import { su } from "@tscircuit/soup-util"
+import type { AnyCircuitElement, LayerRef } from "circuit-json"
+import Papa from "papaparse"
 
 interface PickAndPlaceRow {
   designator: string
@@ -11,6 +11,31 @@ interface PickAndPlaceRow {
 }
 
 const fixedDecimals = 3
+
+const NON_PLACEABLE_FTYPES = new Set([
+  "simple_net",
+  "simple_ground",
+  "simple_power",
+])
+
+function isPlaceableComponent(
+  source: { name?: string; ftype?: string; footprint?: string },
+  pcbComponentId: string,
+): boolean {
+  if (NON_PLACEABLE_FTYPES.has(source.ftype ?? "")) return false
+
+  const name = source.name ?? pcbComponentId
+  if (/^pcb_component_\d+$/.test(name)) return false
+
+  const hasMeaningfulName =
+    !!source.name && !source.name.startsWith("pcb_component_")
+  const hasFtype = !!source.ftype
+  const hasFootprint = !!source.footprint
+
+  if (!hasMeaningfulName && !hasFtype && !hasFootprint) return false
+
+  return true
+}
 
 export const convertCircuitJsonToPickAndPlaceRows = (
   circuitJson: AnyCircuitElement[],
@@ -25,6 +50,11 @@ export const convertCircuitJsonToPickAndPlaceRows = (
         element.source_component_id,
       )
       if (!source_component) continue
+
+      if (
+        !isPlaceableComponent(source_component as any, element.pcb_component_id)
+      )
+        continue
 
       rows.push({
         designator: source_component?.name ?? element.pcb_component_id,
