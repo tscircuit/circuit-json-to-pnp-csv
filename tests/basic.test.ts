@@ -1,13 +1,13 @@
-import { expect, test, describe } from "bun:test"
-import {
-  convertCircuitJsonToPickAndPlaceRows,
-  convertCircuitJsonToPickAndPlaceCsv,
-} from "../src/index"
+import { describe, expect, test } from "bun:test"
 import type {
   AnyCircuitElement,
   PcbComponent,
   SourceManuallyPlacedVia,
 } from "circuit-json"
+import {
+  convertCircuitJsonToPickAndPlaceCsv,
+  convertCircuitJsonToPickAndPlaceRows,
+} from "../src/index"
 
 describe("circuit-json-to-pnp-csv", () => {
   const sampleSoup: AnyCircuitElement[] = [
@@ -107,5 +107,54 @@ describe("circuit-json-to-pnp-csv", () => {
         rotation: 90,
       },
     ])
+  })
+
+  test("adjusts top and bottom rotations for the selected supplier", () => {
+    const orientationAwareSoup = sampleSoup.map((element) => {
+      if (element.type !== "pcb_component") return element
+      return {
+        ...element,
+        pin1_location: "leftside_top" as const,
+        supplier_pin1_location_map: {
+          jlcpcb: "bottomside_left" as const,
+          pcbway: "leftside_top" as const,
+        },
+      }
+    })
+
+    expect(
+      convertCircuitJsonToPickAndPlaceRows(orientationAwareSoup, {
+        supplier: "jlcpcb",
+      }).map((row) => row.rotation),
+    ).toEqual([270, 0])
+    expect(
+      convertCircuitJsonToPickAndPlaceRows(orientationAwareSoup, {
+        supplier: "pcbway",
+      }).map((row) => row.rotation),
+    ).toEqual([0, 90])
+    expect(
+      convertCircuitJsonToPickAndPlaceCsv(orientationAwareSoup, {
+        supplier: "jlcpcb",
+      }),
+    ).toContain("C1,30.000,40.000,bottom,0")
+  })
+
+  test("preserves rotation when semantic pin-1 frames cannot be rotated into each other", () => {
+    const incompatibleOrientationSoup = sampleSoup.map((element) => {
+      if (element.type !== "pcb_component") return element
+      return {
+        ...element,
+        pin1_location: "leftside_top" as const,
+        supplier_pin1_location_map: {
+          jlcpcb: "leftside_bottom" as const,
+        },
+      }
+    })
+
+    expect(
+      convertCircuitJsonToPickAndPlaceRows(incompatibleOrientationSoup, {
+        supplier: "jlcpcb",
+      }).map((row) => row.rotation),
+    ).toEqual([0, 90])
   })
 })
