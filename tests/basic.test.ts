@@ -93,6 +93,23 @@ describe("circuit-json-to-pnp-csv", () => {
     expect(rows.map((row) => row.designator)).toEqual(["R1", "C1"])
   })
 
+  test("skips do-not-place components", () => {
+    const circuitJson = sampleSoup.map((element) => {
+      if (
+        element.type === "pcb_component" &&
+        element.pcb_component_id === "pcb_component_2"
+      ) {
+        return { ...element, do_not_place: true }
+      }
+
+      return element
+    }) as AnyCircuitElement[]
+
+    const rows = convertCircuitJsonToPickAndPlaceRows(circuitJson)
+
+    expect(rows.map((row) => row.designator)).toEqual(["R1"])
+  })
+
   test("convertCircuitJsonToPickAndPlaceRows with flip_y_axis option", () => {
     const rows = convertCircuitJsonToPickAndPlaceRows(sampleSoup, {
       flip_y_axis: true,

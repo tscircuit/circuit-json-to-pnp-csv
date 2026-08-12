@@ -56,6 +56,8 @@ export const convertCircuitJsonToPickAndPlaceRows = (
   const rows: PickAndPlaceRow[] = []
   for (const element of circuitJson) {
     if (element.type === "pcb_component") {
+      if (element.do_not_place) continue
+
       const source_component = su(circuitJson).source_component.get(
         element.source_component_id,
       )
