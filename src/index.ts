@@ -18,6 +18,11 @@ export const convertCircuitJsonToPickAndPlaceRows = (
 ): PickAndPlaceRow[] => {
   opts.flip_y_axis ??= false
 
+  let yAxisMultiplier = 1
+  if (opts.flip_y_axis) {
+    yAxisMultiplier = -1
+  }
+
   const rows: PickAndPlaceRow[] = []
   for (const element of circuitJson) {
     if (element.type === "pcb_component") {
@@ -31,7 +36,7 @@ export const convertCircuitJsonToPickAndPlaceRows = (
       rows.push({
         designator: source_component?.name ?? element.pcb_component_id,
         mid_x: element.center.x,
-        mid_y: element.center.y * (opts.flip_y_axis ? -1 : 1),
+        mid_y: element.center.y * yAxisMultiplier,
         layer: element.layer,
         rotation: element.rotation,
       })
