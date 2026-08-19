@@ -1,5 +1,9 @@
 {
   "name": "circuit-json-to-pnp-csv",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tscircuit/circuit-json-to-pnp-csv.git"
+  },
   "module": "dist/index.js",
   "main": "dist/index.js",
   "version": "0.0.10",
