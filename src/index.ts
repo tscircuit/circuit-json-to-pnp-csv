@@ -62,6 +62,7 @@ export const convertCircuitJsonToPickAndPlaceRows = (
         element.source_component_id,
       )
       if (!source_component) continue
+      if (source_component.ftype === "simple_test_point") continue
 
       rows.push({
         designator: source_component?.name ?? element.pcb_component_id,
