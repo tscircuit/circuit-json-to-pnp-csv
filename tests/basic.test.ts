@@ -187,7 +187,7 @@ describe("circuit-json-to-pnp-csv", () => {
     ).toContain("C1,30.000,40.000,bottom,0")
   })
 
-  test("preserves rotation when semantic pin-1 frames cannot be rotated into each other", () => {
+  test("rejects supplier export when semantic pin-1 frames cannot be rotated into each other", () => {
     const incompatibleOrientationSoup = sampleSoup.map((element) => {
       if (element.type !== "pcb_component") return element
       return {
@@ -199,10 +199,11 @@ describe("circuit-json-to-pnp-csv", () => {
       }
     })
 
-    expect(
+    expect(() =>
       convertCircuitJsonToPickAndPlaceRows(incompatibleOrientationSoup, {
         supplier: "jlcpcb",
-      }).map((row) => row.rotation),
-    ).toEqual([0, 90])
+        unverified_rotation: "error",
+      }),
+    ).toThrow(/R1.*jlcpcb.*incompatible/)
   })
 })
