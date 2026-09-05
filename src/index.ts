@@ -1,4 +1,3 @@
-import { su } from "@tscircuit/soup-util"
 import {
   type AnyCircuitElement,
   type LayerRef,
@@ -54,13 +53,24 @@ export const convertCircuitJsonToPickAndPlaceRows = (
   opts: PickAndPlaceConversionOptions = {},
 ): PickAndPlaceRow[] => {
   const rows: PickAndPlaceRow[] = []
+  const sourceComponents = new Map<
+    string,
+    Extract<AnyCircuitElement, { type: "source_component" }>
+  >()
+  for (const element of circuitJson) {
+    if (
+      element.type === "source_component" &&
+      !sourceComponents.has(element.source_component_id)
+    ) {
+      sourceComponents.set(element.source_component_id, element)
+    }
+  }
+
   for (const element of circuitJson) {
     if (element.type === "pcb_component") {
       if (element.do_not_place) continue
 
-      const source_component = su(circuitJson).source_component.get(
-        element.source_component_id,
-      )
+      const source_component = sourceComponents.get(element.source_component_id)
       if (!source_component) continue
       if (source_component.ftype === "simple_test_point") continue
 
