@@ -84,3 +84,29 @@ bun test
 ## License
 
 [MIT License](LICENSE)
+
+### Supplier rotations and unresolved metadata
+
+Pass `{ supplier: "jlcpcb" }` to adjust rotations using
+`pcb_component.pin1_location` and `supplier_pin1_location_map.jlcpcb`. These
+fields must describe the authored and supplier footprint frames; the converter
+does not fetch supplier footprints or analyze pad geometry.
+
+If either field is missing, or the frames cannot be related by rotation, the
+converter keeps the PCB rotation **and emits a warning**. Supply
+`onRotationWarning` to collect structured diagnostics (designator, PCB component
+ID, supplier, reason and message) instead of logging them.
+
+For fabrication pipelines, reject unresolved rotations:
+
+```ts
+const csv = convertCircuitJsonToPickAndPlaceCsv(circuitJson, {
+  supplier: "jlcpcb",
+  requireSupplierRotation: true,
+})
+```
+
+`requireSupplierRotation` requires a supplier and throws before returning rows
+or CSV when any included component has unresolved rotation metadata. Do-not-place
+components and test points are excluded as usual. Without a supplier, ordinary
+conversion retains PCB rotations without orientation warnings.
