@@ -16,6 +16,17 @@ export interface PickAndPlaceRow {
   rotation: number
 }
 
+export interface PickAndPlaceRotationWarning {
+  designator: string
+  pcb_component_id: string
+  supplier: SupplierName
+  reason:
+    | "missing_pin1_location"
+    | "missing_supplier_pin1_location"
+    | "incompatible_pin1_locations"
+  message: string
+}
+
 export interface PickAndPlaceConversionOptions {
   flip_y_axis?: boolean
   /**
@@ -23,6 +34,10 @@ export interface PickAndPlaceConversionOptions {
    * the selected supplier footprint's pin-1 frame when both are available.
    */
   supplier?: SupplierName
+  /** Reject unresolved supplier rotations instead of using the PCB rotation. */
+  requireSupplierRotation?: boolean
+  /** Called for each unresolved rotation. Defaults to console.warn. */
+  onRotationWarning?: (warning: PickAndPlaceRotationWarning) => void
 }
 
 const fixedDecimals = 3
@@ -32,19 +47,40 @@ const normalizeRotation = (rotation: number): number =>
 
 const getPickAndPlaceRotation = (
   pcbComponent: PcbComponent,
-  supplier?: SupplierName,
+  designator: string,
+  opts: PickAndPlaceConversionOptions,
 ): number => {
-  if (!supplier || !pcbComponent.pin1_location) return pcbComponent.rotation
+  const { supplier } = opts
+  if (!supplier) return pcbComponent.rotation
 
+  const unresolved = (
+    reason: PickAndPlaceRotationWarning["reason"],
+  ): number => {
+    const message = `${designator}: cannot verify ${supplier} pick-and-place rotation (${reason}); PCB rotation ${pcbComponent.rotation} is unverified.`
+    if (opts.requireSupplierRotation) throw new Error(message)
+    const warning = {
+      designator,
+      pcb_component_id: pcbComponent.pcb_component_id,
+      supplier,
+      reason,
+      message,
+    }
+    if (opts.onRotationWarning) opts.onRotationWarning(warning)
+    else console.warn(message)
+    return pcbComponent.rotation
+  }
+
+  if (!pcbComponent.pin1_location) return unresolved("missing_pin1_location")
   const supplierPin1Location =
     pcbComponent.supplier_pin1_location_map?.[supplier]
-  if (!supplierPin1Location) return pcbComponent.rotation
+  if (!supplierPin1Location) return unresolved("missing_supplier_pin1_location")
 
   const rotationAdjustment = getRotationBetweenPcbPin1Locations(
     supplierPin1Location,
     pcbComponent.pin1_location,
   )
-  if (rotationAdjustment === null) return pcbComponent.rotation
+  if (rotationAdjustment === null)
+    return unresolved("incompatible_pin1_locations")
 
   return normalizeRotation(pcbComponent.rotation + rotationAdjustment)
 }
@@ -53,6 +89,9 @@ export const convertCircuitJsonToPickAndPlaceRows = (
   circuitJson: AnyCircuitElement[],
   opts: PickAndPlaceConversionOptions = {},
 ): PickAndPlaceRow[] => {
+  if (opts.requireSupplierRotation && !opts.supplier) {
+    throw new Error("requireSupplierRotation requires a supplier")
+  }
   const rows: PickAndPlaceRow[] = []
   for (const element of circuitJson) {
     if (element.type === "pcb_component") {
@@ -64,12 +103,13 @@ export const convertCircuitJsonToPickAndPlaceRows = (
       if (!source_component) continue
       if (source_component.ftype === "simple_test_point") continue
 
+      const designator = source_component.name ?? element.pcb_component_id
       rows.push({
-        designator: source_component?.name ?? element.pcb_component_id,
+        designator,
         mid_x: element.center.x,
         mid_y: element.center.y * (opts.flip_y_axis ? -1 : 1),
         layer: element.layer,
-        rotation: getPickAndPlaceRotation(element, opts.supplier),
+        rotation: getPickAndPlaceRotation(element, designator, opts),
       })
     }
   }
