@@ -21,14 +21,16 @@
     "@tscircuit/soup-util": "^0.0.38",
     "@types/bun": "latest",
     "@types/papaparse": "^5.3.14",
-    "circuit-json": "^0.0.464",
+    "circuit-json": "^0.0.489",
     "tsup": "^8.3.0"
   },
   "peerDependencies": {
     "@tscircuit/soup-util": "*",
+    "circuit-json": "^0.0.489",
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@tscircuit/circuit-json-util": "^0.0.113",
     "papaparse": "^5.4.1"
   }
 }

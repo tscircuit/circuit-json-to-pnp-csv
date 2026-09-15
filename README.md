@@ -110,3 +110,35 @@ const csv = convertCircuitJsonToPickAndPlaceCsv(circuitJson, {
 or CSV when any included component has unresolved rotation metadata. Do-not-place
 components and test points are excluded as usual. Without a supplier, ordinary
 conversion retains PCB rotations without orientation warnings.
+
+### Preparing JLCPCB orientation metadata
+
+`prepareJlcpcbOrientation` populates missing pin-1 metadata on a copy of routed
+Circuit JSON before conversion. It recovers authored frames from top-side
+numbered pads and looks up supplier frames using the supplied parts engine:
+
+```ts
+import {
+  prepareJlcpcbOrientation,
+  convertCircuitJsonToPickAndPlaceCsv,
+} from "circuit-json-to-pnp-csv"
+
+const prepared = await prepareJlcpcbOrientation(circuitJson, {
+  partsEngine, // provides fetchPartCircuitJson({ supplierPartNumber, platformFetch })
+  platformFetch: fetch,
+})
+const csv = convertCircuitJsonToPickAndPlaceCsv(prepared, { supplier: "jlcpcb" })
+```
+
+The helper accepts `JlcpcbOrientationOptions`, a minimal contract compatible with
+a tscircuit platform config. `partsEngineDisabled: true` prevents lookups; already
+complete metadata works offline. It deduplicates supplier lookups and rejects
+unresolved or incompatible frames with component-specific errors. It does not
+move geometry, reroute, or mutate the input.
+
+Qualification covers fitted components with a JLCPCB part number, excluding DNP
+parts and test points. Bottom-side components need explicit `pin1_location`
+metadata because prebuilt JSON does not record the original footprint layer
+needed to undo mirroring safely. The helper does not fetch data for components
+without a JLCPCB part number; use `requireSupplierRotation` during conversion to
+require verified rotations for every included row.
