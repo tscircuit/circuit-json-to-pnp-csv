@@ -26,13 +26,11 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run build
       - run: pver release
-      - name: Update converter in downstream packages
+      - name: Update converter in CLI
         env:
           GH_TOKEN: ${{ secrets.TSCIRCUIT_BOT_GITHUB_TOKEN }}
         run: |
-          for repo in tscircuit cli; do
-            gh workflow run update-package.yml \
-              --repo "tscircuit/$repo" \
-              --ref main \
-              -f package_names=circuit-json-to-pnp-csv
-          done
+          gh workflow run update-package.yml \
+            --repo tscircuit/cli \
+            --ref main \
+            -f package_names=circuit-json-to-pnp-csv
