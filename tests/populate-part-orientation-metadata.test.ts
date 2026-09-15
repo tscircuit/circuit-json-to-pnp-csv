@@ -2,8 +2,8 @@ import { expect, mock, test } from "bun:test"
 import type { AnyCircuitElement, PcbComponent } from "circuit-json"
 import {
   convertCircuitJsonToPickAndPlaceRows,
-  prepareJlcpcbOrientation,
-  type JlcpcbOrientationOptions,
+  populatePartOrientationMetadata,
+  type PartOrientationOptions,
 } from "../src"
 import fixture from "./assets/sk9822-routed-without-orientation.circuit.json"
 
@@ -33,7 +33,7 @@ const supplierPads: AnyCircuitElement[] = [
 }))
 const withSupplier = (
   fetchPartCircuitJson = mock(async () => supplierPads),
-): JlcpcbOrientationOptions => ({
+): PartOrientationOptions => ({
   partsEngine: { fetchPartCircuitJson },
 })
 const stripMetadata = (elements: AnyCircuitElement[]) =>
@@ -48,7 +48,7 @@ test("recovers SK9822 authored frame from routed pads without moving any geometr
   const before = structuredClone(original)
   const fetchPartCircuitJson = mock(async () => supplierPads)
   const platformFetch = fetch
-  const prepared = await prepareJlcpcbOrientation(original, {
+  const prepared = await populatePartOrientationMetadata(original, {
     ...withSupplier(fetchPartCircuitJson),
     platformFetch,
   })
@@ -79,7 +79,9 @@ test("preserves explicit metadata, including bottom-side frames, without fetchin
     },
   })
   expect(
-    await prepareJlcpcbOrientation(original, { partsEngineDisabled: true }),
+    await populatePartOrientationMetadata(original, {
+      partsEngineDisabled: true,
+    }),
   ).toEqual(original)
 })
 
@@ -87,14 +89,14 @@ test("does not infer bottom-side frames when original footprint mirroring is unk
   const original = circuit()
   pcb(original).layer = "bottom"
   await expect(
-    prepareJlcpcbOrientation(original, withSupplier()),
+    populatePartOrientationMetadata(original, withSupplier()),
   ).rejects.toThrow("bottom-side JSON requires explicit pin1_location")
 })
 
 test("reports disabled lookup instead of exporting an unverified rotation", async () => {
   const fetchPartCircuitJson = mock(async () => supplierPads)
   await expect(
-    prepareJlcpcbOrientation(circuit(), {
+    populatePartOrientationMetadata(circuit(), {
       ...withSupplier(fetchPartCircuitJson),
       partsEngineDisabled: true,
     }),
@@ -106,7 +108,7 @@ test("reports disabled lookup instead of exporting an unverified rotation", asyn
 
 test("reports failed supplier lookups with component identity", async () => {
   await expect(
-    prepareJlcpcbOrientation(
+    populatePartOrientationMetadata(
       circuit(),
       withSupplier(
         mock(async () => {
@@ -121,11 +123,14 @@ test("reports failed supplier lookups with component identity", async () => {
 
 test("rejects absent supplier geometry and incompatible frames", async () => {
   await expect(
-    prepareJlcpcbOrientation(circuit(), withSupplier(mock(async () => []))),
+    populatePartOrientationMetadata(
+      circuit(),
+      withSupplier(mock(async () => [])),
+    ),
   ).rejects.toThrow("cannot determine supplier pin-1 orientation")
   const original = circuit()
   pcb(original).supplier_pin1_location_map = { jlcpcb: "leftside_bottom" }
-  await expect(prepareJlcpcbOrientation(original, {})).rejects.toThrow(
+  await expect(populatePartOrientationMetadata(original, {})).rejects.toThrow(
     "cannot be matched by rotation",
   )
 })
@@ -133,7 +138,7 @@ test("rejects absent supplier geometry and incompatible frames", async () => {
 test("rejects missing numbered pads rather than fabricating local orientation metadata", async () => {
   const original = circuit().filter((element) => element.type !== "pcb_smtpad")
   await expect(
-    prepareJlcpcbOrientation(original, withSupplier()),
+    populatePartOrientationMetadata(original, withSupplier()),
   ).rejects.toThrow("cannot determine authored pin-1 orientation")
 })
 
@@ -145,11 +150,14 @@ test("fetches repeated supplier part numbers only once", async () => {
     pin1_location: "leftside_top",
   })
   const fetchPartCircuitJson = mock(async () => supplierPads)
-  await prepareJlcpcbOrientation(original, withSupplier(fetchPartCircuitJson))
+  await populatePartOrientationMetadata(
+    original,
+    withSupplier(fetchPartCircuitJson),
+  )
   expect(fetchPartCircuitJson).toHaveBeenCalledTimes(1)
 })
 
-test("excludes DNP parts, test points, and components without a JLCPCB BOM part", async () => {
+test("excludes DNP parts, test points, and components without supplier part numbers", async () => {
   for (const kind of ["dnp", "testpoint", "no-supplier"]) {
     const original = circuit()
     const source = original.find(
@@ -161,7 +169,9 @@ test("excludes DNP parts, test points, and components without a JLCPCB BOM part"
         Object.assign(source, { ftype: "simple_test_point" })
       if (kind === "no-supplier") delete source.supplier_part_numbers
     }
-    expect(await prepareJlcpcbOrientation(original, {})).toEqual(original)
+    expect(await populatePartOrientationMetadata(original, {})).toEqual(
+      original,
+    )
   }
 })
 
@@ -199,8 +209,139 @@ for (const shape of ["polygon", "plated-hole"] as const) {
         outer_diameter: 1,
       }
     })
-    const prepared = await prepareJlcpcbOrientation(original, withSupplier())
+    const prepared = await populatePartOrientationMetadata(
+      original,
+      withSupplier(),
+    )
     expect(pcb(prepared).pin1_location).toBe("leftside_top")
     expect(stripMetadata(prepared)).toEqual(original)
   })
 }
+
+test("populates a non-JLCPCB supplier through the injected parts engine", async () => {
+  const original = circuit()
+  const source = original.find(
+    (element) => element.type === "source_component",
+  )!
+  if (source.type !== "source_component") throw new Error("missing source")
+  source.supplier_part_numbers = { pcbway: ["PCBWAY-LED", "UNSELECTED"] }
+  const fetchPartCircuitJson = mock(async () => supplierPads)
+  const prepared = await populatePartOrientationMetadata(
+    original,
+    withSupplier(fetchPartCircuitJson),
+  )
+  expect(fetchPartCircuitJson).toHaveBeenCalledWith({
+    supplierPartNumber: "PCBWAY-LED",
+    platformFetch: undefined,
+  })
+  expect(fetchPartCircuitJson).toHaveBeenCalledTimes(1)
+  expect(pcb(prepared).supplier_pin1_location_map).toEqual({
+    pcbway: "bottomside_left",
+  })
+  expect(
+    convertCircuitJsonToPickAndPlaceRows(prepared, {
+      supplier: "pcbway",
+      requireSupplierRotation: true,
+    })[0]!.rotation,
+  ).toBe(90)
+  expect(stripMetadata(prepared)).toEqual(original)
+})
+
+test("processes the first candidate for each supplier by default, matching core", async () => {
+  const original = circuit()
+  const source = original.find(
+    (element) => element.type === "source_component",
+  )!
+  if (source.type !== "source_component") throw new Error("missing source")
+  source.supplier_part_numbers = {
+    pcbway: ["PCBWAY-LED", "OTHER-LED"],
+    jlcpcb: ["C5378730"],
+  }
+  const fetched: string[] = []
+  const prepared = await populatePartOrientationMetadata(original, {
+    partsEngine: {
+      fetchPartCircuitJson: ({ supplierPartNumber }) => {
+        fetched.push(supplierPartNumber!)
+        return supplierPads
+      },
+    },
+  })
+  expect(fetched).toEqual(["PCBWAY-LED", "C5378730"])
+  expect(pcb(prepared).supplier_pin1_location_map).toEqual({
+    pcbway: "bottomside_left",
+    jlcpcb: "bottomside_left",
+  })
+})
+
+test("a supplier filter skips other suppliers' lookups and validation", async () => {
+  const original = circuit()
+  const source = original.find(
+    (element) => element.type === "source_component",
+  )!
+  if (source.type !== "source_component") throw new Error("missing source")
+  source.supplier_part_numbers = {
+    jlcpcb: ["C5378730"],
+    pcbway: ["PCBWAY-LED"],
+  }
+  pcb(original).supplier_pin1_location_map = { jlcpcb: "leftside_bottom" }
+  const fetched: string[] = []
+  const prepared = await populatePartOrientationMetadata(original, {
+    supplier: "pcbway",
+    partsEngine: {
+      fetchPartCircuitJson: ({ supplierPartNumber }) => {
+        fetched.push(supplierPartNumber!)
+        return supplierPads
+      },
+    },
+  })
+  expect(fetched).toEqual(["PCBWAY-LED"])
+  expect(pcb(prepared).supplier_pin1_location_map).toEqual({
+    pcbway: "bottomside_left",
+    jlcpcb: "leftside_bottom",
+  })
+})
+
+test("does not share cached results across suppliers with the same part number", async () => {
+  const original = circuit()
+  const source = original.find(
+    (element) => element.type === "source_component",
+  )!
+  if (source.type !== "source_component") throw new Error("missing source")
+  source.supplier_part_numbers = {
+    pcbway: ["SHARED-ID"],
+    jlcpcb: ["SHARED-ID"],
+  }
+  const fetchPartCircuitJson = mock(async () => supplierPads)
+  await populatePartOrientationMetadata(
+    original,
+    withSupplier(fetchPartCircuitJson),
+  )
+  expect(fetchPartCircuitJson).toHaveBeenCalledTimes(2)
+})
+
+test("reports non-JLCPCB lookup failures and deduplicates synchronous failures", async () => {
+  const original = circuit()
+  const source = original.find(
+    (element) => element.type === "source_component",
+  )!
+  if (source.type !== "source_component") throw new Error("missing source")
+  source.supplier_part_numbers = { pcbway: ["PCBWAY-LED"] }
+  original.push({
+    ...pcb(original),
+    pcb_component_id: "second",
+    pin1_location: "leftside_top",
+  })
+  const fetchPartCircuitJson = mock(() => {
+    throw new Error("offline")
+  })
+  const before = structuredClone(original)
+  await expect(
+    populatePartOrientationMetadata(original, {
+      partsEngine: { fetchPartCircuitJson },
+    }),
+  ).rejects.toThrow(
+    "D_RGB (pcbway:PCBWAY-LED): supplier orientation lookup failed: offline",
+  )
+  expect(fetchPartCircuitJson).toHaveBeenCalledTimes(1)
+  expect(original).toEqual(before)
+})
