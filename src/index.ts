@@ -131,6 +131,6 @@ export const convertCircuitJsonToPickAndPlaceCsv = (
   )
 
 export {
-  prepareJlcpcbOrientation,
-  type JlcpcbOrientationOptions,
-} from "./prepare-jlcpcb-orientation"
+  populatePartOrientationMetadata,
+  type PartOrientationOptions,
+} from "./populate-part-orientation-metadata"
