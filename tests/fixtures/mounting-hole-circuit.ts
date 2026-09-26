@@ -1,0 +1,60 @@
+import type { AnyCircuitElement } from "circuit-json"
+
+export const mountingHoleCircuit: AnyCircuitElement[] = [
+  ...[
+    [-15.5, -15.5],
+    [-15.5, 15.5],
+    [15.5, -15.5],
+    [15.5, 15.5],
+  ].flatMap(([x, y], index): AnyCircuitElement[] => [
+    {
+      type: "source_component",
+      source_component_id: `source_mh${index + 1}`,
+      name: `MH${index + 1}`,
+      ftype: "simple_chip",
+      supplier_part_numbers: {},
+    },
+    {
+      type: "pcb_component",
+      obstructs_within_bounds: true,
+      pcb_component_id: `pcb_mh${index + 1}`,
+      source_component_id: `source_mh${index + 1}`,
+      center: { x, y },
+      width: 5.6,
+      height: 5.6,
+      layer: "top",
+      rotation: 0,
+      do_not_place: false,
+    },
+    {
+      type: "pcb_plated_hole",
+      pcb_plated_hole_id: `hole_mh${index + 1}`,
+      pcb_component_id: `pcb_mh${index + 1}`,
+      shape: "circle",
+      x,
+      y,
+      outer_diameter: 5.6,
+      hole_diameter: 3.3,
+      layers: ["top", "bottom"],
+      port_hints: ["pin1"],
+    },
+  ]),
+  {
+    type: "source_component",
+    source_component_id: "source_r1",
+    name: "R1",
+    ftype: "simple_resistor",
+    resistance: 1000,
+  },
+  {
+    type: "pcb_component",
+    obstructs_within_bounds: true,
+    pcb_component_id: "pcb_r1",
+    source_component_id: "source_r1",
+    center: { x: 0, y: 5 },
+    width: 1,
+    height: 0.5,
+    layer: "top",
+    rotation: 90,
+  },
+]
