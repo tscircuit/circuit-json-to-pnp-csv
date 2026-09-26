@@ -81,6 +81,20 @@ This project uses Bun's built-in test runner. To run the tests, use the followin
 bun test
 ```
 
+## Bare mounting holes
+
+Bare mounting holes authored as chips can appear as `pcb_component` records even
+though there is no part to assemble. The exporter excludes a `simple_chip` named
+`MH<number>` (case-insensitive) when its footprint contains exactly one plated or
+non-plated hole, no SMT pads, and it has no manufacturer part number, supplier part
+number, or physical CAD model. Other names and multi-pad footprints are preserved.
+Assigned mounting hardware is preserved; the BOM exporter also preserves parts
+assigned by `resolvePart`.
+
+For custom names or ambiguous footprints, set `doNotPlace` in tscircuit
+(`pcb_component.do_not_place` in Circuit JSON) explicitly. This exclusion only
+changes assembly rows; it does not remove holes or copper from fabrication data.
+
 ## License
 
 [MIT License](LICENSE)
