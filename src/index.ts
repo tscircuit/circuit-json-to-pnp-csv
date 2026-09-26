@@ -7,6 +7,7 @@ import {
   getRotationBetweenPcbPin1Locations,
 } from "circuit-json"
 import Papa from "papaparse"
+import { isBareMountingHole } from "./is-bare-mounting-hole"
 
 export interface PickAndPlaceRow {
   designator: string
@@ -102,6 +103,8 @@ export const convertCircuitJsonToPickAndPlaceRows = (
       )
       if (!source_component) continue
       if (source_component.ftype === "simple_test_point") continue
+
+      if (isBareMountingHole(circuitJson, source_component, element)) continue
 
       const designator = source_component.name ?? element.pcb_component_id
       rows.push({
