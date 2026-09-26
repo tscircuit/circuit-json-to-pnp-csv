@@ -9,11 +9,7 @@ export const isBareMountingHole = (
   source: SourceComponentBase,
   pcb: PcbComponent,
 ): boolean => {
-  if (
-    source.ftype !== "simple_chip" ||
-    !/^MH\d+$/i.test(source.name?.trim() ?? "")
-  )
-    return false
+  if (source.ftype !== "simple_chip") return false
   if (source.manufacturer_part_number?.trim()) return false
   if (
     Object.values(source.supplier_part_numbers ?? {}).some((numbers) =>

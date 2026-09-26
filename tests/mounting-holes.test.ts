@@ -21,24 +21,32 @@ const getRows = convertCircuitJsonToPickAndPlaceRows
 
 const singleHole = () => structuredClone(mountingHoleCircuit.slice(0, 3))
 
+test.each(["mount-left", "H1", "J1", "MH1_DRIVER", ""])(
+  "excludes bare mounting holes regardless of name: %s",
+  async (name) => {
+    const circuit = singleHole().map(
+      (element): AnyCircuitElement =>
+        element.type === "source_component" ? { ...element, name } : element,
+    )
+    expect(await getRows(circuit)).toEqual([])
+  },
+)
+
 const preservedCases: Array<
   [string, (circuit: AnyCircuitElement[]) => AnyCircuitElement[]]
 > = [
   [
-    "single-pin connector without a supplier number",
+    "single-pin header without a supplier number",
     (circuit) =>
       circuit.map((element) =>
         element.type === "source_component"
-          ? { ...element, name: "J1" }
-          : element,
-      ),
-  ],
-  [
-    "similar component name",
-    (circuit) =>
-      circuit.map((element) =>
-        element.type === "source_component"
-          ? { ...element, name: "MH1_DRIVER" }
+          ? {
+              ...element,
+              name: "J1",
+              ftype: "simple_pin_header",
+              pin_count: 1,
+              gender: "male",
+            }
           : element,
       ),
   ],
