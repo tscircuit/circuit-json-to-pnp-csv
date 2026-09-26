@@ -4,7 +4,6 @@ import type {
   SourceComponentBase,
 } from "circuit-json"
 
-/** Recognize legacy bare mounting-hole chips without hiding assigned hardware. */
 export const isBareMountingHole = (
   circuitJson: AnyCircuitElement[],
   source: SourceComponentBase,
@@ -23,7 +22,6 @@ export const isBareMountingHole = (
   )
     return false
 
-  // An authored physical model can represent a real screw, terminal or insert.
   if (
     circuitJson.some(
       (element) =>
@@ -48,8 +46,6 @@ export const isBareMountingHole = (
         element.type === "pcb_smtpad") &&
       element.pcb_component_id === pcb.pcb_component_id,
   )
-  // A name or missing supplier number alone is not enough: preserve connectors,
-  // multi-pin footprints and ordinary chips without supplier metadata.
   return (
     geometry.length === 1 &&
     (geometry[0].type === "pcb_plated_hole" || geometry[0].type === "pcb_hole")

@@ -1,7 +1,5 @@
 import type { AnyCircuitElement } from "circuit-json"
 
-// Reduced from a real fabrication export: grounded mounting holes were authored
-// as simple_chip footprints, so they had pcb_components with do_not_place=false.
 export const mountingHoleCircuit: AnyCircuitElement[] = [
   ...[
     [-15.5, -15.5],
