@@ -150,16 +150,3 @@ metadata because prebuilt JSON does not record the original footprint layer
 needed to undo mirroring safely. The helper does not fetch data for components
 without supplier part numbers; use `requireSupplierRotation` during conversion to
 require verified rotations for every included row.
-
-Numbered single-row footprints (for example, JST PH connectors) use the pin-1
-to pin-2 direction when the row has consecutive, unique pin numbers in physical
-order. Both the authored and supplier rows use the same convention. A reversed
-row therefore adds 180 degrees: a PCB rotation of 90 degrees exports as 270
-degrees for the supplier. Ambiguous rows remain unresolved.
-
-The CAD model's rotation is not a supplier placement angle: model axes and
-visual alignment offsets can differ from the supplier footprint. Export pipelines
-must call `populatePartOrientationMetadata` with their parts engine before the
-synchronous supplier conversion, or supply verified orientation metadata. Merely
-selecting `supplier: "jlcpcb"` does not fetch missing supplier geometry; use
-`requireSupplierRotation: true` to reject an unverified fallback.
