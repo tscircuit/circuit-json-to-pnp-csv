@@ -1,0 +1,172 @@
+[
+  {
+    "type": "source_component",
+    "source_component_id": "source_component_43",
+    "ftype": "simple_connector",
+    "name": "J1",
+    "manufacturer_part_number": "B4B-PH-K-S(LF)(SN)",
+    "supplier_part_numbers": {
+      "jlcpcb": [
+        "C131334"
+      ]
+    },
+    "source_group_id": "source_group_1"
+  },
+  {
+    "type": "pcb_component",
+    "pcb_component_id": "pcb_component_55",
+    "center": {
+      "x": 17,
+      "y": -4.7
+    },
+    "width": 1.75,
+    "height": 7.299999999999999,
+    "layer": "top",
+    "rotation": 90,
+    "insertion_direction": "from_above",
+    "source_component_id": "source_component_43",
+    "subcircuit_id": "subcircuit_source_group_10",
+    "do_not_place": false,
+    "obstructs_within_bounds": true,
+    "is_allowed_to_be_off_board": false,
+    "pcb_group_id": "pcb_group_1",
+    "cable_insertion_center": {
+      "x": 17,
+      "y": -4.5625
+    },
+    "position_mode": "relative_to_group_anchor",
+    "positioned_relative_to_pcb_group_id": "pcb_group_1",
+    "display_offset_x": 22.625,
+    "display_offset_y": 3.6
+  },
+  {
+    "type": "pcb_plated_hole",
+    "pcb_plated_hole_id": "pcb_plated_hole_8",
+    "pcb_component_id": "pcb_component_55",
+    "pcb_port_id": "pcb_port_253",
+    "outer_diameter": 1.4,
+    "hole_diameter": 0.75,
+    "shape": "circle",
+    "port_hints": [
+      "unnamed_platedhole9",
+      "1"
+    ],
+    "x": 17,
+    "y": -7.65,
+    "layers": [
+      "top",
+      "bottom",
+      "inner1",
+      "inner2"
+    ],
+    "is_covered_with_solder_mask": false,
+    "subcircuit_id": "subcircuit_source_group_10",
+    "pcb_group_id": "pcb_group_1"
+  },
+  {
+    "type": "pcb_plated_hole",
+    "pcb_plated_hole_id": "pcb_plated_hole_9",
+    "pcb_component_id": "pcb_component_55",
+    "pcb_port_id": "pcb_port_254",
+    "outer_width": 1.2,
+    "outer_height": 1.75,
+    "hole_width": 0.75,
+    "hole_height": 0.75,
+    "shape": "pill",
+    "port_hints": [
+      "unnamed_platedhole10",
+      "2"
+    ],
+    "x": 17,
+    "y": -5.65,
+    "layers": [
+      "top",
+      "bottom",
+      "inner1",
+      "inner2"
+    ],
+    "is_covered_with_solder_mask": false,
+    "subcircuit_id": "subcircuit_source_group_10",
+    "pcb_group_id": "pcb_group_1",
+    "ccw_rotation": 90
+  },
+  {
+    "type": "pcb_plated_hole",
+    "pcb_plated_hole_id": "pcb_plated_hole_10",
+    "pcb_component_id": "pcb_component_55",
+    "pcb_port_id": "pcb_port_255",
+    "outer_width": 1.2,
+    "outer_height": 1.75,
+    "hole_width": 0.75,
+    "hole_height": 0.75,
+    "shape": "pill",
+    "port_hints": [
+      "unnamed_platedhole11",
+      "3"
+    ],
+    "x": 17,
+    "y": -3.6500000000000004,
+    "layers": [
+      "top",
+      "bottom",
+      "inner1",
+      "inner2"
+    ],
+    "is_covered_with_solder_mask": false,
+    "subcircuit_id": "subcircuit_source_group_10",
+    "pcb_group_id": "pcb_group_1",
+    "ccw_rotation": 90
+  },
+  {
+    "type": "pcb_plated_hole",
+    "pcb_plated_hole_id": "pcb_plated_hole_11",
+    "pcb_component_id": "pcb_component_55",
+    "pcb_port_id": "pcb_port_256",
+    "outer_width": 1.2,
+    "outer_height": 1.75,
+    "hole_width": 0.75,
+    "hole_height": 0.75,
+    "shape": "pill",
+    "port_hints": [
+      "unnamed_platedhole12",
+      "4"
+    ],
+    "x": 17,
+    "y": -1.6500000000000004,
+    "layers": [
+      "top",
+      "bottom",
+      "inner1",
+      "inner2"
+    ],
+    "is_covered_with_solder_mask": false,
+    "subcircuit_id": "subcircuit_source_group_10",
+    "pcb_group_id": "pcb_group_1",
+    "ccw_rotation": 90
+  },
+  {
+    "type": "cad_component",
+    "cad_component_id": "cad_component_43",
+    "position": {
+      "x": 17,
+      "y": -4.65,
+      "z": 0.8
+    },
+    "rotation": {
+      "x": 0,
+      "y": 0,
+      "z": 90
+    },
+    "pcb_component_id": "pcb_component_55",
+    "source_component_id": "source_component_43",
+    "model_obj_url": "https://modelcdn.tscircuit.com/easyeda_models/assets/C131334.obj?uuid=3b95b8b4d5d24ff4a871a43c952e432a&cachebust_origin=",
+    "model_step_url": "https://modelcdn.tscircuit.com/easyeda_models/assets/C131334.step?uuid=3b95b8b4d5d24ff4a871a43c952e432a&cachebust_origin=",
+    "model_origin_alignment": "center_of_component_on_board_surface",
+    "anchor_alignment": "center_of_component_on_board_surface",
+    "model_origin_position": {
+      "x": 3,
+      "y": 0,
+      "z": 0
+    }
+  }
+]
