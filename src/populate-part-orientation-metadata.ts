@@ -1,4 +1,3 @@
-import { analyzePcbPin1Location } from "@tscircuit/circuit-json-util"
 import {
   type AnyCircuitElement,
   type PcbComponent,
@@ -7,6 +6,7 @@ import {
   getRotationBetweenPcbPin1Locations,
   pcb_pin1_location,
 } from "circuit-json"
+import { analyzePartPin1Location } from "./analyze-part-pin1-location"
 
 /** Minimal parts-engine contract; compatible with a tscircuit platform config. */
 export interface PartOrientationOptions {
@@ -53,7 +53,7 @@ const getLocalPin1Location = (
     }
     return [{ ...element, ...toLocal(element) }]
   })
-  return analyzePcbPin1Location(pads)
+  return analyzePartPin1Location(pads)
 }
 
 /**
@@ -123,7 +123,7 @@ export const populatePartOrientationMetadata = async (
               )
               .then((supplierJson) =>
                 supplierJson?.length
-                  ? analyzePcbPin1Location(supplierJson)
+                  ? analyzePartPin1Location(supplierJson)
                   : null,
               )
             supplierLocations.set(cacheKey, pending)
