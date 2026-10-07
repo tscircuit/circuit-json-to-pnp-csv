@@ -23,3 +23,24 @@ jobs:
 
       - name: Run tests
         run: bun test
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Test packed install with current Circuit JSON
+        run: |
+          bun run build
+          consumer_dir=$(mktemp -d)
+          npm pack --pack-destination "$consumer_dir"
+          cp tests/assets/nine-key-keyboard.json "$consumer_dir/circuit.json"
+          cd "$consumer_dir"
+          npm install ./circuit-json-to-pnp-csv-*.tgz circuit-json@0.0.520
+          node --input-type=module <<'JS'
+          import assert from "node:assert/strict"
+          import { readFileSync } from "node:fs"
+          import { convertCircuitJsonToPickAndPlaceRows } from "circuit-json-to-pnp-csv"
+          const circuit = JSON.parse(readFileSync("circuit.json", "utf8"))
+          assert.equal(convertCircuitJsonToPickAndPlaceRows(circuit).length, 28)
+          JS
