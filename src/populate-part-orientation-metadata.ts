@@ -7,6 +7,7 @@ import {
   getRotationBetweenPcbPin1Locations,
   pcb_pin1_location,
 } from "circuit-json"
+import { getPin1Polarity } from "./get-pin1-polarity"
 
 /** Minimal parts-engine contract; compatible with a tscircuit platform config. */
 export interface PartOrientationOptions {
@@ -72,7 +73,13 @@ export const populatePartOrientationMetadata = async (
         : [],
     ),
   )
-  const supplierLocations = new Map<string, Promise<PcbPin1Location | null>>()
+  const supplierParts = new Map<
+    string,
+    Promise<{
+      pin1Location: PcbPin1Location | null
+      pin1Polarity: ReturnType<typeof getPin1Polarity>
+    }>
+  >()
   const errors: string[] = []
   for (const component of prepared) {
     if (component.type !== "pcb_component" || component.do_not_place) continue
@@ -112,7 +119,7 @@ export const populatePartOrientationMetadata = async (
         }
         try {
           const cacheKey = `${supplier}:${partNumber}`
-          let pending = supplierLocations.get(cacheKey)
+          let pending = supplierParts.get(cacheKey)
           if (!pending) {
             pending = Promise.resolve()
               .then(() =>
@@ -121,14 +128,37 @@ export const populatePartOrientationMetadata = async (
                   platformFetch: platform.platformFetch,
                 }),
               )
-              .then((supplierJson) =>
-                supplierJson?.length
-                  ? analyzePcbPin1Location(supplierJson)
-                  : null,
-              )
-            supplierLocations.set(cacheKey, pending)
+              .then((supplierJson) => {
+                if (!supplierJson?.length)
+                  return { pin1Location: null, pin1Polarity: null }
+                return {
+                  pin1Location: analyzePcbPin1Location(supplierJson),
+                  pin1Polarity: getPin1Polarity(supplierJson),
+                }
+              })
+            supplierParts.set(cacheKey, pending)
           }
-          supplierLocation = (await pending) ?? undefined
+          const supplierPart = await pending
+          if (
+            source.ftype === "simple_diode" ||
+            source.ftype === "simple_led"
+          ) {
+            const localPin1Polarity = getPin1Polarity(
+              prepared,
+              source.source_component_id,
+            )
+            if (
+              localPin1Polarity &&
+              supplierPart.pin1Polarity &&
+              localPin1Polarity !== supplierPart.pin1Polarity
+            ) {
+              errors.push(
+                `${label}: authored pin 1 is ${localPin1Polarity}, but supplier pin 1 is ${supplierPart.pin1Polarity}. Update pinLabels or choose a supplier part with matching polarity.`,
+              )
+              continue
+            }
+          }
+          supplierLocation = supplierPart.pin1Location ?? undefined
         } catch (error) {
           errors.push(
             `${label}: supplier orientation lookup failed: ${error instanceof Error ? error.message : String(error)}`,
