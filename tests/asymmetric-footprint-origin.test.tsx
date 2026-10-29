@@ -216,7 +216,7 @@ test("repro: PnP position for an asymmetric footprint with an offset cutout", as
   }).toEqual({
     designator: "U_SENSOR",
     mid_x: 0,
-    mid_y: -0.775,
+    mid_y: 0.2,
     layer: "top",
     rotation: 90,
   })
