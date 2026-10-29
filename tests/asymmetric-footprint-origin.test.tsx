@@ -1,72 +1,64 @@
 import { expect, test } from "bun:test"
 import type { AnyCircuitElement, PcbComponent } from "circuit-json"
+import { Circuit, Fragment } from "tscircuit"
 import {
   type PickAndPlaceRow,
   convertCircuitJsonToPickAndPlaceRows,
 } from "../src"
 
-const circuitJson: AnyCircuitElement[] = [
-  {
-    type: "source_component",
-    source_component_id: "source_component_sensor",
-    ftype: "simple_chip",
-    name: "U_SENSOR",
-  },
-  {
-    type: "pcb_component",
-    pcb_component_id: "pcb_component_sensor",
-    source_component_id: "source_component_sensor",
-    // The complete footprint bounds include an offset mechanical cutout.
-    center: { x: 0, y: -0.775 },
-    // The authored footprint origin remains centered on the sensor's pin grid.
-    footprint_origin: { x: 0, y: 0.2 },
-    width: 11.8,
-    height: 16.96,
-    layer: "top",
-    rotation: 90,
-    obstructs_within_bounds: true,
-  },
-  {
-    type: "pcb_cutout",
-    pcb_cutout_id: "pcb_cutout_sensor_aperture",
-    pcb_component_id: "pcb_component_sensor",
-    shape: "rect",
-    center: { x: 0, y: -0.775 },
-    width: 16.96,
-    height: 8.6,
-    rotation: 90,
-  },
-  ...Array.from(
+const renderCircuit = async (): Promise<AnyCircuitElement[]> => {
+  const circuit = new Circuit()
+  const rightPinXs = Array.from(
     { length: 8 },
-    (_, index): AnyCircuitElement => ({
-      type: "pcb_plated_hole",
-      pcb_plated_hole_id: `pcb_plated_hole_right_${index + 1}`,
-      pcb_component_id: "pcb_component_sensor",
-      shape: "circle",
-      x: 5.350002,
-      y: -6.474993 + index * 1.780032,
-      outer_diameter: 1.0999978,
-      hole_diameter: 0.700024,
-      layers: ["top", "bottom"],
-      port_hints: [`pin${index + 1}`],
-    }),
-  ),
-  ...Array.from(
+    (_, index) => -6.674993 + index * 1.780032,
+  )
+  const leftPinXs = Array.from(
     { length: 8 },
-    (_, index): AnyCircuitElement => ({
-      type: "pcb_plated_hole",
-      pcb_plated_hole_id: `pcb_plated_hole_left_${index + 9}`,
-      pcb_component_id: "pcb_component_sensor",
-      shape: "circle",
-      x: -5.350002,
-      y: 6.874993 - index * 1.780032,
-      outer_diameter: 1.0999978,
-      hole_diameter: 0.700024,
-      layers: ["top", "bottom"],
-      port_hints: [`pin${index + 9}`],
-    }),
-  ),
-]
+    (_, index) => 6.674993 - index * 1.780032,
+  )
+
+  circuit.add(
+    <board width={20} height={22} routingDisabled>
+      <chip
+        name="U_SENSOR"
+        pcbX={0}
+        pcbY={0.2}
+        pcbRotation={90}
+        footprint={
+          <footprint>
+            {rightPinXs.map((pcbX, index) => (
+              <Fragment key={`right-${index + 1}`}>
+                <platedhole
+                  shape="circle"
+                  pcbX={pcbX}
+                  pcbY={-5.350002}
+                  outerDiameter={1.0999978}
+                  holeDiameter={0.700024}
+                  portHints={[`pin${index + 1}`]}
+                />
+              </Fragment>
+            ))}
+            {leftPinXs.map((pcbX, index) => (
+              <Fragment key={`left-${index + 9}`}>
+                <platedhole
+                  shape="circle"
+                  pcbX={pcbX}
+                  pcbY={5.350002}
+                  outerDiameter={1.0999978}
+                  holeDiameter={0.700024}
+                  portHints={[`pin${index + 9}`]}
+                />
+              </Fragment>
+            ))}
+            <cutout shape="rect" pcbX={-0.975} width={16.96} height={8.6} />
+          </footprint>
+        }
+      />
+    </board>,
+  )
+  await circuit.renderUntilSettled()
+  return circuit.getCircuitJson()
+}
 
 const renderPnpPositionSvg = (
   elements: AnyCircuitElement[],
@@ -110,15 +102,22 @@ const renderPnpPositionSvg = (
 }
 
 test("repro: PnP position for an asymmetric footprint with an offset cutout", async () => {
+  const circuitJson = await renderCircuit()
   const pcbComponent = circuitJson.find(
     (element): element is PcbComponent => element.type === "pcb_component",
   )!
 
-  expect(pcbComponent.center).toEqual({ x: 0, y: -0.775 })
-  expect(pcbComponent.footprint_origin).toEqual({ x: 0, y: 0.2 })
+  expect(pcbComponent.center.x).toBeCloseTo(0)
+  expect(pcbComponent.center.y).toBeCloseTo(-0.775)
+  expect(pcbComponent.footprint_origin?.x).toBeCloseTo(0)
+  expect(pcbComponent.footprint_origin?.y).toBeCloseTo(0.2)
 
   const [pnpRow] = convertCircuitJsonToPickAndPlaceRows(circuitJson)
-  expect(pnpRow).toEqual({
+  expect({
+    ...pnpRow,
+    mid_x: Number(pnpRow.mid_x.toFixed(3)),
+    mid_y: Number(pnpRow.mid_y.toFixed(3)),
+  }).toEqual({
     designator: "U_SENSOR",
     mid_x: 0,
     mid_y: -0.775,
