@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import type { AnyCircuitElement, PcbComponent } from "circuit-json"
-import { Circuit, Fragment } from "tscircuit"
+import { Circuit } from "tscircuit"
 import {
   type PickAndPlaceRow,
   convertCircuitJsonToPickAndPlaceRows,
@@ -8,14 +8,6 @@ import {
 
 const renderCircuit = async (): Promise<AnyCircuitElement[]> => {
   const circuit = new Circuit()
-  const rightPinXs = Array.from(
-    { length: 8 },
-    (_, index) => -6.674993 + index * 1.780032,
-  )
-  const leftPinXs = Array.from(
-    { length: 8 },
-    (_, index) => 6.674993 - index * 1.780032,
-  )
 
   circuit.add(
     <board width={20} height={22} routingDisabled>
@@ -26,30 +18,134 @@ const renderCircuit = async (): Promise<AnyCircuitElement[]> => {
         pcbRotation={90}
         footprint={
           <footprint>
-            {rightPinXs.map((pcbX, index) => (
-              <Fragment key={`right-${index + 1}`}>
-                <platedhole
-                  shape="circle"
-                  pcbX={pcbX}
-                  pcbY={-5.350002}
-                  outerDiameter={1.0999978}
-                  holeDiameter={0.700024}
-                  portHints={[`pin${index + 1}`]}
-                />
-              </Fragment>
-            ))}
-            {leftPinXs.map((pcbX, index) => (
-              <Fragment key={`left-${index + 9}`}>
-                <platedhole
-                  shape="circle"
-                  pcbX={pcbX}
-                  pcbY={5.350002}
-                  outerDiameter={1.0999978}
-                  holeDiameter={0.700024}
-                  portHints={[`pin${index + 9}`]}
-                />
-              </Fragment>
-            ))}
+            <platedhole
+              shape="circle"
+              pcbX={-6.674993}
+              pcbY={-5.350002}
+              outerDiameter={1.0999978}
+              holeDiameter={0.700024}
+              portHints={["pin1"]}
+            />
+            <platedhole
+              shape="circle"
+              pcbX={-4.894961}
+              pcbY={-5.350002}
+              outerDiameter={1.0999978}
+              holeDiameter={0.700024}
+              portHints={["pin2"]}
+            />
+            <platedhole
+              shape="circle"
+              pcbX={-3.114929}
+              pcbY={-5.350002}
+              outerDiameter={1.0999978}
+              holeDiameter={0.700024}
+              portHints={["pin3"]}
+            />
+            <platedhole
+              shape="circle"
+              pcbX={-1.334897}
+              pcbY={-5.350002}
+              outerDiameter={1.0999978}
+              holeDiameter={0.700024}
+              portHints={["pin4"]}
+            />
+            <platedhole
+              shape="circle"
+              pcbX={0.445135}
+              pcbY={-5.350002}
+              outerDiameter={1.0999978}
+              holeDiameter={0.700024}
+              portHints={["pin5"]}
+            />
+            <platedhole
+              shape="circle"
+              pcbX={2.225167}
+              pcbY={-5.350002}
+              outerDiameter={1.0999978}
+              holeDiameter={0.700024}
+              portHints={["pin6"]}
+            />
+            <platedhole
+              shape="circle"
+              pcbX={4.005199}
+              pcbY={-5.350002}
+              outerDiameter={1.0999978}
+              holeDiameter={0.700024}
+              portHints={["pin7"]}
+            />
+            <platedhole
+              shape="circle"
+              pcbX={5.785231}
+              pcbY={-5.350002}
+              outerDiameter={1.0999978}
+              holeDiameter={0.700024}
+              portHints={["pin8"]}
+            />
+            <platedhole
+              shape="circle"
+              pcbX={6.674993}
+              pcbY={5.350002}
+              outerDiameter={1.0999978}
+              holeDiameter={0.700024}
+              portHints={["pin9"]}
+            />
+            <platedhole
+              shape="circle"
+              pcbX={4.894961}
+              pcbY={5.350002}
+              outerDiameter={1.0999978}
+              holeDiameter={0.700024}
+              portHints={["pin10"]}
+            />
+            <platedhole
+              shape="circle"
+              pcbX={3.114929}
+              pcbY={5.350002}
+              outerDiameter={1.0999978}
+              holeDiameter={0.700024}
+              portHints={["pin11"]}
+            />
+            <platedhole
+              shape="circle"
+              pcbX={1.334897}
+              pcbY={5.350002}
+              outerDiameter={1.0999978}
+              holeDiameter={0.700024}
+              portHints={["pin12"]}
+            />
+            <platedhole
+              shape="circle"
+              pcbX={-0.445135}
+              pcbY={5.350002}
+              outerDiameter={1.0999978}
+              holeDiameter={0.700024}
+              portHints={["pin13"]}
+            />
+            <platedhole
+              shape="circle"
+              pcbX={-2.225167}
+              pcbY={5.350002}
+              outerDiameter={1.0999978}
+              holeDiameter={0.700024}
+              portHints={["pin14"]}
+            />
+            <platedhole
+              shape="circle"
+              pcbX={-4.005199}
+              pcbY={5.350002}
+              outerDiameter={1.0999978}
+              holeDiameter={0.700024}
+              portHints={["pin15"]}
+            />
+            <platedhole
+              shape="circle"
+              pcbX={-5.785231}
+              pcbY={5.350002}
+              outerDiameter={1.0999978}
+              holeDiameter={0.700024}
+              portHints={["pin16"]}
+            />
             <cutout shape="rect" pcbX={-0.975} width={16.96} height={8.6} />
           </footprint>
         }
