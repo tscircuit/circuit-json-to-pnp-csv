@@ -13,8 +13,6 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
-    "types": ["bun", "tscircuit"],
-
     // Best practices
     "strict": true,
     "skipLibCheck": true,
