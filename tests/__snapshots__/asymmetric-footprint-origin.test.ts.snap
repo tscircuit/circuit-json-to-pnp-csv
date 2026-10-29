@@ -1,6 +1,0 @@
-// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
-
-exports[`repro: PnP position for an asymmetric footprint with an offset cutout 1`] = `
-"Designator,Mid X,Mid Y,Layer,Rotation
-U_SENSOR,0.000,-0.775,top,90"
-`;
