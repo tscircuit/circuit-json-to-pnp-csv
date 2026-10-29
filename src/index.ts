@@ -107,10 +107,11 @@ export const convertCircuitJsonToPickAndPlaceRows = (
       if (isBareMountingHole(circuitJson, source_component, element)) continue
 
       const designator = source_component.name ?? element.pcb_component_id
+      const placementPosition = element.footprint_origin ?? element.center
       rows.push({
         designator,
-        mid_x: element.center.x,
-        mid_y: element.center.y * (opts.flip_y_axis ? -1 : 1),
+        mid_x: placementPosition.x,
+        mid_y: placementPosition.y * (opts.flip_y_axis ? -1 : 1),
         layer: element.layer,
         rotation: getPickAndPlaceRotation(element, designator, opts),
       })
