@@ -106,7 +106,8 @@ export const convertCircuitJsonToPickAndPlaceRows = (
 
       if (isBareMountingHole(circuitJson, source_component, element)) continue
 
-      const designator = source_component.name ?? element.pcb_component_id
+      const designator =
+        source_component.name?.trim() || element.pcb_component_id
       const placementPosition = element.footprint_origin ?? element.center
       rows.push({
         designator,

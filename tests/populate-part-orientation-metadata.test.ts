@@ -6,6 +6,7 @@ import {
   type PartOrientationOptions,
 } from "../src"
 import fixture from "./assets/sk9822-routed-without-orientation.circuit.json"
+import { mountingHoleCircuit } from "./fixtures/mounting-hole-circuit"
 
 const circuit = () => structuredClone(fixture) as AnyCircuitElement[]
 const pcb = (elements: AnyCircuitElement[]) =>
@@ -344,4 +345,77 @@ test("reports non-JLCPCB lookup failures and deduplicates synchronous failures",
   )
   expect(fetchPartCircuitJson).toHaveBeenCalledTimes(1)
   expect(original).toEqual(before)
+})
+
+test("trims supplier part numbers, skips blank candidates, and deduplicates trimmed lookups", async () => {
+  const original = circuit()
+  const source = original.find(
+    (element) => element.type === "source_component",
+  )!
+  if (source.type !== "source_component") throw new Error("missing source")
+  source.name = "  D_RGB  "
+  source.supplier_part_numbers = {
+    jlcpcb: ["", "   ", " C5378730 "],
+    pcbway: ["   "],
+  }
+  original.push(
+    {
+      ...source,
+      source_component_id: "source_second",
+      name: "   ",
+      supplier_part_numbers: {
+        jlcpcb: ["C5378730"],
+      },
+    },
+    {
+      ...pcb(original),
+      pcb_component_id: "pcb_second",
+      source_component_id: "source_second",
+      pin1_location: "leftside_top",
+    },
+  )
+
+  const fetchPartCircuitJson = mock(async () => supplierPads)
+  const prepared = await populatePartOrientationMetadata(
+    original,
+    withSupplier(fetchPartCircuitJson),
+  )
+
+  expect(fetchPartCircuitJson).toHaveBeenCalledTimes(1)
+  expect(fetchPartCircuitJson).toHaveBeenCalledWith({
+    supplierPartNumber: "C5378730",
+    platformFetch: undefined,
+  })
+  expect(
+    convertCircuitJsonToPickAndPlaceRows(prepared, {
+      supplier: "jlcpcb",
+      requireSupplierRotation: true,
+    }).map((row) => ({ designator: row.designator, rotation: row.rotation })),
+  ).toEqual([
+    { designator: "D_RGB", rotation: 90 },
+    { designator: "pcb_second", rotation: 90 },
+  ])
+})
+
+test("ignores bare mounting holes even when supplier_part_numbers contains blank strings", async () => {
+  const bareMountingHoleWithBlankSupplier = structuredClone(
+    mountingHoleCircuit.slice(0, 3),
+  ).map((element): AnyCircuitElement => {
+    if (element.type !== "source_component") return element
+    return {
+      ...element,
+      supplier_part_numbers: {
+        jlcpcb: ["   "],
+      },
+    }
+  })
+
+  const fetchPartCircuitJson = mock(async () => supplierPads)
+  const prepared = await populatePartOrientationMetadata(
+    bareMountingHoleWithBlankSupplier,
+    withSupplier(fetchPartCircuitJson),
+  )
+
+  expect(fetchPartCircuitJson).not.toHaveBeenCalled()
+  expect(prepared).toEqual(bareMountingHoleWithBlankSupplier)
 })
