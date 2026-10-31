@@ -7,6 +7,7 @@ import {
   getRotationBetweenPcbPin1Locations,
   pcb_pin1_location,
 } from "circuit-json"
+import { isBareMountingHole } from "./is-bare-mounting-hole"
 
 /** Minimal parts-engine contract; compatible with a tscircuit platform config. */
 export interface PartOrientationOptions {
@@ -25,6 +26,13 @@ export interface PartOrientationOptions {
   partsEngineDisabled?: boolean
   platformFetch?: typeof fetch
 }
+
+const getFirstSupplierPartNumber = (
+  supplierPartNumbers: string[] | undefined,
+): string =>
+  supplierPartNumbers
+    ?.map((supplierPartNumber) => supplierPartNumber.trim().replace(/\s+/g, ""))
+    .find(Boolean) ?? ""
 
 /** Recover the authored frame from placed pads without changing routed geometry. */
 const getLocalPin1Location = (
@@ -78,14 +86,18 @@ export const populatePartOrientationMetadata = async (
     if (component.type !== "pcb_component" || component.do_not_place) continue
     const source = sources.get(component.source_component_id)
     if (!source || source.ftype === "simple_test_point") continue
+    if (isBareMountingHole(prepared, source, component)) continue
     const suppliers = platform.supplier
       ? [platform.supplier]
       : (Object.keys(source.supplier_part_numbers ?? {}) as SupplierName[])
     for (const supplier of suppliers) {
-      // Match core: use the first candidate part number for each supplier.
-      const partNumber = source.supplier_part_numbers?.[supplier]?.[0]
+      // Match core: use the first non-blank candidate part number for each supplier.
+      const partNumber = getFirstSupplierPartNumber(
+        source.supplier_part_numbers?.[supplier],
+      )
       if (!partNumber) continue
-      const label = `${source.name} (${supplier}:${partNumber})`
+      const designator = source.name?.trim() || component.pcb_component_id
+      const label = `${designator} (${supplier}:${partNumber})`
       let localLocation = component.pin1_location
       if (!localLocation) {
         localLocation = getLocalPin1Location(prepared, component) ?? undefined
