@@ -58,6 +58,44 @@ describe("circuit-json-to-pnp-csv", () => {
     ])
   })
 
+  test("converts frozen input without adding lookup metadata", () => {
+    const circuitJson = sampleSoup.map((element) => structuredClone(element))
+    const originalKeys = Object.keys(circuitJson)
+    Object.freeze(circuitJson)
+
+    expect(convertCircuitJsonToPickAndPlaceRows(circuitJson)).toEqual([
+      { designator: "R1", mid_x: 10, mid_y: 20, layer: "top", rotation: 0 },
+      { designator: "C1", mid_x: 30, mid_y: 40, layer: "bottom", rotation: 90 },
+    ])
+    expect(Object.keys(circuitJson)).toEqual(originalKeys)
+    expect(convertCircuitJsonToPickAndPlaceCsv(circuitJson)).toContain("R1,")
+  })
+
+  test("resolves sources that appear after their PCB components", () => {
+    const circuitJson = [
+      sampleSoup[3]!,
+      sampleSoup[1]!,
+      sampleSoup[0]!,
+      sampleSoup[2]!,
+    ]
+
+    expect(
+      convertCircuitJsonToPickAndPlaceRows(circuitJson).map(
+        (row) => row.designator,
+      ),
+    ).toEqual(["C1", "R1"])
+  })
+
+  test("keeps the first source when an ID occurs more than once", () => {
+    const source = sampleSoup[0]!
+    if (source.type !== "source_component") throw new Error("Expected a source")
+    const circuitJson = [...sampleSoup, { ...source, name: "duplicate" }]
+
+    expect(
+      convertCircuitJsonToPickAndPlaceRows(circuitJson)[0]?.designator,
+    ).toBe("R1")
+  })
+
   test("convertCircuitJsonToPickAndPlaceCsv", () => {
     const csv = convertCircuitJsonToPickAndPlaceCsv(sampleSoup)
     const expectedCsv =
