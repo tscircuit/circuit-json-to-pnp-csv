@@ -32,8 +32,14 @@ import type { AnyCircuitElement } from "circuit-json"
 
 const circuitJson: AnyCircuitElement[] = [
   {
+    type: "source_component",
+    source_component_id: "resistor1",
+    name: "R1",
+    ftype: "simple_resistor",
+  },
+  {
     type: "pcb_component",
-    pcb_component_id: "R1",
+    pcb_component_id: "pcb_R1",
     center: { x: 10, y: 20 },
     layer: "top",
     rotation: 0,
@@ -41,16 +47,18 @@ const circuitJson: AnyCircuitElement[] = [
     height: 2,
     source_component_id: "resistor1",
   },
-  // ... more components
 ]
 
 // Get Pick'n'Place rows
-const rows = convertCircuitJsonToPickAndPlaceRows(circuitSoup)
+const rows = convertCircuitJsonToPickAndPlaceRows(circuitJson)
 console.log(rows)
+// [ { designator: 'R1', mid_x: 10, mid_y: 20, layer: 'top', rotation: 0 } ]
 
 // Get Pick'n'Place CSV
-const csv = convertCircuitJsonToPickAndPlaceCsv(circuitSoup)
+const csv = convertCircuitJsonToPickAndPlaceCsv(circuitJson)
 console.log(csv)
+// Designator,mid_x,mid_y,layer,rotation
+// R1,10.000,20.000,top,0
 ```
 
 ## API
@@ -62,8 +70,11 @@ Converts Circuit JSON elements to an array of Pick'n'Place rows.
 - `circuitJson`: An array of Circuit JSON elements.
 - `opts`: Optional configuration object.
   - `flip_y_axis`: If true, flips the Y-axis values. Default is `false`.
+  - `supplier`: Adjust rotations using `pcb_component.pin1_location` and the supplier's `pin1_location` (`"jlcpcb"`). Unresolved supplier rotations throw unless `requireSupplierRotation: false` is set (then they emit warnings via `onRotationWarning`).
 
 Returns an array of `PickAndPlaceRow` objects.
+
+Components without a matching `source_component` (by `source_component_id`), source components with `ftype: "simple_test_point"`, and bare mounting holes are skipped and produce no rows.
 
 ### `convertCircuitJsonToPickAndPlaceCsv(soup: AnyCircuitElement[]): string`
 
