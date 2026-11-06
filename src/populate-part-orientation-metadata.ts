@@ -1,12 +1,12 @@
 import { analyzePcbPin1Location } from "@tscircuit/circuit-json-util"
 import {
   type AnyCircuitElement,
-  type PcbComponent,
   type PcbPin1Location,
   type SupplierName,
   getRotationBetweenPcbPin1Locations,
   pcb_pin1_location,
 } from "circuit-json"
+import { getLocalPads } from "./footprint-orientation"
 
 /** Minimal parts-engine contract; compatible with a tscircuit platform config. */
 export interface PartOrientationOptions {
@@ -24,36 +24,6 @@ export interface PartOrientationOptions {
   }
   partsEngineDisabled?: boolean
   platformFetch?: typeof fetch
-}
-
-/** Recover the authored frame from placed pads without changing routed geometry. */
-const getLocalPin1Location = (
-  circuitJson: AnyCircuitElement[],
-  component: PcbComponent,
-): PcbPin1Location | null => {
-  // Prebuilt JSON does not record the footprint's original layer. Without that
-  // information we cannot safely undo mirroring for bottom-side components.
-  if (component.layer !== "top") return null
-  const radians = (-component.rotation * Math.PI) / 180
-  const cos = Math.cos(radians)
-  const sin = Math.sin(radians)
-  const toLocal = (point: { x: number; y: number }) => {
-    const x = point.x - component.center.x
-    const y = point.y - component.center.y
-    return { x: x * cos - y * sin, y: x * sin + y * cos }
-  }
-  const pads = circuitJson.flatMap<AnyCircuitElement>((element) => {
-    if (
-      (element.type !== "pcb_smtpad" && element.type !== "pcb_plated_hole") ||
-      element.pcb_component_id !== component.pcb_component_id
-    )
-      return []
-    if (element.type === "pcb_smtpad" && element.shape === "polygon") {
-      return [{ ...element, points: element.points.map(toLocal) }]
-    }
-    return [{ ...element, ...toLocal(element) }]
-  })
-  return analyzePcbPin1Location(pads)
 }
 
 /**
@@ -88,7 +58,12 @@ export const populatePartOrientationMetadata = async (
       const label = `${source.name} (${supplier}:${partNumber})`
       let localLocation = component.pin1_location
       if (!localLocation) {
-        localLocation = getLocalPin1Location(prepared, component) ?? undefined
+        // Prebuilt JSON does not record the original footprint layer for
+        // safely undoing mirroring on the bottom side.
+        if (component.layer === "top")
+          localLocation =
+            analyzePcbPin1Location(getLocalPads(prepared, component)) ??
+            undefined
         if (localLocation) component.pin1_location = localLocation
       }
       const localResult = pcb_pin1_location.safeParse(localLocation)

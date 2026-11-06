@@ -4,10 +4,15 @@ import {
   type LayerRef,
   type PcbComponent,
   type SupplierName,
-  getRotationBetweenPcbPin1Locations,
 } from "circuit-json"
 import Papa from "papaparse"
 import { isBareMountingHole } from "./is-bare-mounting-hole"
+import {
+  createSupplierRotationResolver,
+  getStoredRotationAdjustment,
+  type Placement,
+  type SupplierPickAndPlaceOptions,
+} from "./resolve-supplier-rotation"
 
 export interface PickAndPlaceRow {
   designator: string
@@ -79,14 +84,43 @@ const getPickAndPlaceRotation = (
     pcbComponent.supplier_pin1_location_map?.[supplier]
   if (!supplierPin1Location) return unresolved("missing_supplier_pin1_location")
 
-  const rotationAdjustment = getRotationBetweenPcbPin1Locations(
-    supplierPin1Location,
-    pcbComponent.pin1_location,
-  )
+  const rotationAdjustment = getStoredRotationAdjustment(pcbComponent, supplier)
   if (rotationAdjustment === null)
     return unresolved("incompatible_pin1_locations")
 
   return normalizeRotation(pcbComponent.rotation + rotationAdjustment)
+}
+
+function* getPlacements(
+  circuitJson: AnyCircuitElement[],
+): Generator<Placement> {
+  const { source_component } = su(circuitJson)
+  for (const component of circuitJson) {
+    if (component.type !== "pcb_component" || component.do_not_place) continue
+    const source = source_component.get(component.source_component_id)
+    if (!source || source.ftype === "simple_test_point") continue
+    if (isBareMountingHole(circuitJson, source, component)) continue
+    yield {
+      component,
+      source,
+      designator: source.name ?? component.pcb_component_id,
+    }
+  }
+}
+
+const toRow = (
+  { component, designator }: Placement,
+  rotation: number,
+  flipYAxis?: boolean,
+): PickAndPlaceRow => {
+  const position = component.footprint_origin ?? component.center
+  return {
+    designator,
+    mid_x: position.x,
+    mid_y: position.y * (flipYAxis ? -1 : 1),
+    layer: component.layer,
+    rotation,
+  }
 }
 
 export const convertCircuitJsonToPickAndPlaceRows = (
@@ -96,39 +130,19 @@ export const convertCircuitJsonToPickAndPlaceRows = (
   if (opts.requireSupplierRotation && !opts.supplier) {
     throw new Error("requireSupplierRotation requires a supplier")
   }
-  const rows: PickAndPlaceRow[] = []
-  for (const element of circuitJson) {
-    if (element.type === "pcb_component") {
-      if (element.do_not_place) continue
 
-      const source_component = su(circuitJson).source_component.get(
-        element.source_component_id,
-      )
-      if (!source_component) continue
-      if (source_component.ftype === "simple_test_point") continue
-
-      if (isBareMountingHole(circuitJson, source_component, element)) continue
-
-      const designator = source_component.name ?? element.pcb_component_id
-      const placementPosition = element.footprint_origin ?? element.center
-      rows.push({
-        designator,
-        mid_x: placementPosition.x,
-        mid_y: placementPosition.y * (opts.flip_y_axis ? -1 : 1),
-        layer: element.layer,
-        rotation: getPickAndPlaceRotation(element, designator, opts),
-      })
-    }
-  }
-  return rows
+  return Array.from(getPlacements(circuitJson), (placement) =>
+    toRow(
+      placement,
+      getPickAndPlaceRotation(placement.component, placement.designator, opts),
+      opts.flip_y_axis,
+    ),
+  )
 }
 
-export const convertCircuitJsonToPickAndPlaceCsv = (
-  circuitJson: AnyCircuitElement[],
-  opts: PickAndPlaceConversionOptions = {},
-): string =>
+const rowsToCsv = (rows: PickAndPlaceRow[]): string =>
   Papa.unparse(
-    convertCircuitJsonToPickAndPlaceRows(circuitJson, opts).map((row) => ({
+    rows.map((row) => ({
       Designator: row.designator,
       "Mid X": row.mid_x.toFixed(fixedDecimals),
       "Mid Y": row.mid_y.toFixed(fixedDecimals),
@@ -136,6 +150,56 @@ export const convertCircuitJsonToPickAndPlaceCsv = (
       Rotation: row.rotation,
     })),
   )
+
+export const convertCircuitJsonToPickAndPlaceCsv = (
+  circuitJson: AnyCircuitElement[],
+  opts: PickAndPlaceConversionOptions = {},
+): string => rowsToCsv(convertCircuitJsonToPickAndPlaceRows(circuitJson, opts))
+
+/** Resolve missing supplier rotations and export all fitted components. */
+export const convertCircuitJsonToSupplierPickAndPlaceCsv = async (
+  circuitJson: AnyCircuitElement[],
+  opts: SupplierPickAndPlaceOptions,
+): Promise<string> => {
+  if (!opts.supplier)
+    throw new Error("Supplier placement export requires a supplier")
+  const placements = Array.from(getPlacements(circuitJson))
+  const resolveRotation = createSupplierRotationResolver(circuitJson, opts)
+  const rows: PickAndPlaceRow[] = new Array(placements.length)
+  const errors: string[] = new Array(placements.length)
+  let next = 0
+
+  const worker = async () => {
+    while (next < placements.length) {
+      const index = next++
+      const placement = placements[index]!
+      try {
+        const adjustment = await resolveRotation(placement)
+        rows[index] = toRow(
+          placement,
+          normalizeRotation(placement.component.rotation + adjustment),
+          opts.flip_y_axis,
+        )
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        errors[index] = `${placement.designator}: ${message}`
+      }
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(4, placements.length) }, worker),
+  )
+  const failures = errors.filter(Boolean)
+  if (failures.length) {
+    throw new Error(
+      `Unverified supplier pick-and-place rotations:\n${failures.join("\n")}`,
+    )
+  }
+  return rowsToCsv(rows)
+}
+
+export type { SupplierPickAndPlaceOptions }
 
 export {
   populatePartOrientationMetadata,

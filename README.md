@@ -116,6 +116,26 @@ draft must explicitly pass `requireSupplierRotation: false`. In that mode,
 ID, supplier, reason and message) instead of logging them. Do not use that
 fallback as a verified fabrication placement.
 
+### Exporting saved boards with missing supplier metadata
+
+Use the asynchronous supplier export with a parts engine:
+
+```ts
+import { convertCircuitJsonToSupplierPickAndPlaceCsv } from "circuit-json-to-pnp-csv"
+
+const csv = await convertCircuitJsonToSupplierPickAndPlaceCsv(circuitJson, {
+  supplier: "jlcpcb",
+  partsEngine,
+})
+```
+
+The export uses verified metadata where available. Otherwise it fetches the
+selected supplier footprint through the parts engine and compares it with the
+authored pad geometry. For footprints without a usable pin-1 frame, it matches
+pad labels and checks for a unique quarter-turn alignment. An unresolved
+rotation rejects the export with the affected component name. The synchronous
+export remains available for callers that already have verified metadata.
+
 ### Preparing supplier orientation metadata
 
 `populatePartOrientationMetadata` populates missing pin-1 metadata on a copy of routed
