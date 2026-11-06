@@ -28,6 +28,14 @@ test("exports supplier rotations for the RP2040 board's renumbered USB-C pads", 
   const pendingCsv = exportWithSupplier(supplier as AnyCircuitElement[])
   expect(pendingCsv).toBeInstanceOf(Promise)
   const csv = await pendingCsv
+  const rebuilt = circuit.map((element) =>
+    element.type === "pcb_component"
+      ? { ...element, supplier_rotation_offset_map: { jlcpcb: 0 } }
+      : element,
+  )
+  expect(
+    convertCircuitJsonToPickAndPlaceCsv(rebuilt, { supplier: "jlcpcb" }),
+  ).toBe(csv)
   expect(csv.split(/\r?\n/)).toEqual([
     "Designator,Mid X,Mid Y,Layer,Rotation",
     "J_USB,-6.000,16.700,top,180",

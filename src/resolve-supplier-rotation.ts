@@ -1,4 +1,8 @@
-import { analyzePcbPin1Location } from "@tscircuit/circuit-json-util"
+import {
+  analyzePcbPin1Location,
+  getPcbFootprintOrientationPadsFromCircuitJson,
+  getPcbFootprintRotationOffset,
+} from "@tscircuit/circuit-json-util"
 import {
   type AnyCircuitElement,
   type PcbComponent,
@@ -6,11 +10,7 @@ import {
   type SupplierName,
   getRotationBetweenPcbPin1Locations,
 } from "circuit-json"
-import {
-  getLocalPads,
-  getMatchedPadRotation,
-  getPads,
-} from "./footprint-orientation"
+import { getLocalPads, getPads } from "./footprint-orientation"
 import {
   createSupplierFootprintLookup,
   type PartOrientationOptions,
@@ -32,6 +32,8 @@ export const getStoredRotationAdjustment = (
   component: PcbComponent,
   supplier: SupplierName,
 ): number | null => {
+  const offset = component.supplier_rotation_offset_map?.[supplier]
+  if (offset !== undefined && Number.isFinite(offset)) return offset
   const local = component.pin1_location
   const supplied = component.supplier_pin1_location_map?.[supplier]
   return local && supplied
@@ -109,14 +111,21 @@ export const createSupplierRotationResolver = (
       if (adjustment !== null) return adjustment
     }
 
-    const adjustment = getMatchedPadRotation(
+    const authoredOrientation = getPcbFootprintOrientationPadsFromCircuitJson(
       circuitJson,
       component,
-      localPads,
+    )
+    const supplierOrientation = getPcbFootprintOrientationPadsFromCircuitJson(
       supplierJson,
       supplierComponent,
-      supplierPads,
     )
+    const adjustment =
+      authoredOrientation && supplierOrientation
+        ? getPcbFootprintRotationOffset(
+            authoredOrientation,
+            supplierOrientation,
+          )
+        : null
     if (adjustment === null) {
       throw new Error(
         `cannot match authored and supplier pad orientation for ${partNumber}`,

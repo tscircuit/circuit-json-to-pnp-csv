@@ -127,13 +127,12 @@ const csv = await convertCircuitJsonToPickAndPlaceCsv(circuitJson, {
 })
 ```
 
-The export uses verified metadata where available. Otherwise it fetches the
-selected supplier footprint through the parts engine and compares it with the
-authored pad geometry. For footprints without a usable pin-1 frame, the
-recovery path requires matching contact labels and a unique quarter-turn that
+The export uses Core's `supplier_rotation_offset_map` when available, followed
+by compatible saved pin-1 frames. For older boards with missing metadata, a
+parts engine can fetch the supplier footprint and run the same pad comparison
+Core uses. It requires matching contact labels and a unique quarter-turn that
 aligns every SMT pad and plated-hole center. An unresolved rotation rejects the
-export with the affected component name. The synchronous export remains
-available for callers that already have verified metadata.
+export with the affected component name.
 
 ### Preparing supplier orientation metadata
 

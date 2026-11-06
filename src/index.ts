@@ -79,16 +79,16 @@ const getPickAndPlaceRotation = (
     return pcbComponent.rotation
   }
 
+  const rotationAdjustment = getStoredRotationAdjustment(pcbComponent, supplier)
+  if (rotationAdjustment !== null)
+    return normalizeRotation(pcbComponent.rotation + rotationAdjustment)
+
   if (!pcbComponent.pin1_location) return unresolved("missing_pin1_location")
   const supplierPin1Location =
     pcbComponent.supplier_pin1_location_map?.[supplier]
   if (!supplierPin1Location) return unresolved("missing_supplier_pin1_location")
 
-  const rotationAdjustment = getStoredRotationAdjustment(pcbComponent, supplier)
-  if (rotationAdjustment === null)
-    return unresolved("incompatible_pin1_locations")
-
-  return normalizeRotation(pcbComponent.rotation + rotationAdjustment)
+  return unresolved("incompatible_pin1_locations")
 }
 
 function* getPlacements(
