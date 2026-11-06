@@ -1,4 +1,4 @@
-import { analyzePcbPin1Location } from "@tscircuit/circuit-json-util"
+import { analyzePcbPin1Location, cju } from "@tscircuit/circuit-json-util"
 import {
   type AnyCircuitElement,
   type PcbPin1Location,
@@ -8,23 +8,12 @@ import {
 } from "circuit-json"
 import { getLocalPads } from "./footprint-orientation"
 
-/** Minimal parts-engine contract; compatible with a tscircuit platform config. */
-export interface PartOrientationOptions {
-  /** Restrict preparation to one supplier; otherwise process each supplier on the source component. */
-  supplier?: SupplierName
-  partsEngine?: {
-    fetchPartCircuitJson?: (params: {
-      supplierPartNumber?: string
-      manufacturerPartNumber?: string
-      platformFetch?: typeof fetch
-    }) =>
-      | AnyCircuitElement[]
-      | undefined
-      | Promise<AnyCircuitElement[] | undefined>
-  }
-  partsEngineDisabled?: boolean
-  platformFetch?: typeof fetch
-}
+import {
+  createSupplierFootprintLookup,
+  type PartOrientationOptions,
+} from "./supplier-footprints"
+
+export type { PartOrientationOptions } from "./supplier-footprints"
 
 /**
  * Populate orientation metadata using the same parts-engine contract as core.
@@ -35,18 +24,13 @@ export const populatePartOrientationMetadata = async (
   platform: PartOrientationOptions = {},
 ): Promise<AnyCircuitElement[]> => {
   const prepared = structuredClone(circuitJson)
-  const sources = new Map(
-    prepared.flatMap((element) =>
-      element.type === "source_component"
-        ? [[element.source_component_id, element] as const]
-        : [],
-    ),
-  )
-  const supplierLocations = new Map<string, Promise<PcbPin1Location | null>>()
+  const { source_component } = cju([...prepared])
+  const fetchFootprint = createSupplierFootprintLookup(platform)
+  const supplierLocations = new Map<string, PcbPin1Location | null>()
   const errors: string[] = []
   for (const component of prepared) {
     if (component.type !== "pcb_component" || component.do_not_place) continue
-    const source = sources.get(component.source_component_id)
+    const source = source_component.get(component.source_component_id)
     if (!source || source.ftype === "simple_test_point") continue
     const suppliers = platform.supplier
       ? [platform.supplier]
@@ -75,11 +59,7 @@ export const populatePartOrientationMetadata = async (
       }
       let supplierLocation = component.supplier_pin1_location_map?.[supplier]
       if (!supplierLocation) {
-        const partsEngine = platform.partsEngine
-        if (
-          platform.partsEngineDisabled ||
-          !partsEngine?.fetchPartCircuitJson
-        ) {
+        if (!fetchFootprint) {
           errors.push(
             `${label}: supplier pin-1 orientation is missing and the parts engine is disabled or unavailable`,
           )
@@ -87,23 +67,16 @@ export const populatePartOrientationMetadata = async (
         }
         try {
           const cacheKey = `${supplier}:${partNumber}`
-          let pending = supplierLocations.get(cacheKey)
-          if (!pending) {
-            pending = Promise.resolve()
-              .then(() =>
-                partsEngine.fetchPartCircuitJson!({
-                  supplierPartNumber: partNumber,
-                  platformFetch: platform.platformFetch,
-                }),
-              )
-              .then((supplierJson) =>
-                supplierJson?.length
-                  ? analyzePcbPin1Location(supplierJson)
-                  : null,
-              )
-            supplierLocations.set(cacheKey, pending)
+          if (!supplierLocations.has(cacheKey)) {
+            const supplierJson = await fetchFootprint(supplier, partNumber)
+            supplierLocations.set(
+              cacheKey,
+              supplierJson?.length
+                ? analyzePcbPin1Location(supplierJson)
+                : null,
+            )
           }
-          supplierLocation = (await pending) ?? undefined
+          supplierLocation = supplierLocations.get(cacheKey) ?? undefined
         } catch (error) {
           errors.push(
             `${label}: supplier orientation lookup failed: ${error instanceof Error ? error.message : String(error)}`,

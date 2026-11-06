@@ -11,7 +11,10 @@ import {
   getMatchedPadRotation,
   getPads,
 } from "./footprint-orientation"
-import type { PartOrientationOptions } from "./populate-part-orientation-metadata"
+import {
+  createSupplierFootprintLookup,
+  type PartOrientationOptions,
+} from "./supplier-footprints"
 
 export interface SupplierPickAndPlaceOptions extends PartOrientationOptions {
   supplier: SupplierName
@@ -40,7 +43,7 @@ export const createSupplierRotationResolver = (
   options: SupplierPickAndPlaceOptions,
 ) => {
   const { supplier } = options
-  const footprints = new Map<string, Promise<AnyCircuitElement[] | undefined>>()
+  const fetchFootprint = createSupplierFootprintLookup(options)
 
   return async ({ component, source }: Placement): Promise<number> => {
     const stored = getStoredRotationAdjustment(component, supplier)
@@ -66,25 +69,13 @@ export const createSupplierRotationResolver = (
 
     const partNumber = source.supplier_part_numbers?.[supplier]?.[0]
     if (!partNumber) throw new Error(`missing ${supplier} part number`)
-    const engine = options.partsEngine
-    if (options.partsEngineDisabled || !engine?.fetchPartCircuitJson) {
+    if (!fetchFootprint) {
       throw new Error(
         `supplier orientation is missing for ${partNumber} and the parts engine is unavailable`,
       )
     }
 
-    let pending = footprints.get(partNumber)
-    if (!pending) {
-      pending = Promise.resolve().then(() =>
-        engine.fetchPartCircuitJson!({
-          supplierPartNumber: partNumber,
-          platformFetch: options.platformFetch,
-        }),
-      )
-      footprints.set(partNumber, pending)
-    }
-
-    const supplierJson = await pending
+    const supplierJson = await fetchFootprint(supplier, partNumber)
     if (!supplierJson?.length)
       throw new Error(`no supplier footprint for ${partNumber}`)
     const components = supplierJson.filter(

@@ -1,4 +1,4 @@
-import { su } from "@tscircuit/soup-util"
+import { cju } from "@tscircuit/circuit-json-util"
 import {
   type AnyCircuitElement,
   type LayerRef,
@@ -94,7 +94,7 @@ const getPickAndPlaceRotation = (
 function* getPlacements(
   circuitJson: AnyCircuitElement[],
 ): Generator<Placement> {
-  const { source_component } = su(circuitJson)
+  const { source_component } = cju([...circuitJson])
   for (const component of circuitJson) {
     if (component.type !== "pcb_component" || component.do_not_place) continue
     const source = source_component.get(component.source_component_id)

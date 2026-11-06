@@ -1,10 +1,23 @@
-import type { AnyCircuitElement, PcbComponent } from "circuit-json"
-
-type Point = { x: number; y: number }
-type Pad = Extract<
+import {
+  cju,
+  getPcbElementBounds,
+  transformPCBElements,
+} from "@tscircuit/circuit-json-util"
+import type {
   AnyCircuitElement,
-  { type: "pcb_smtpad" | "pcb_plated_hole" }
->
+  PcbComponent,
+  PcbPlatedHole,
+  PcbSmtPad,
+  Point,
+} from "circuit-json"
+import {
+  applyToPoint,
+  compose,
+  rotateDEG,
+  translate,
+} from "transformation-matrix"
+
+type Pad = PcbSmtPad | PcbPlatedHole
 type PadMatch = { local: Point; supplier: Point }
 
 const numericHint = (hint: string) => /^\d+$/.test(hint)
@@ -13,16 +26,14 @@ const normalizeHint = (hint: string) =>
     .trim()
     .toLowerCase()
     .replace(/^pin(?=\d+$)/, "")
-const getCenter = (pad: Pad): Point => {
-  if (pad.type === "pcb_smtpad" && pad.shape === "polygon") {
-    const xs = pad.points.map((p) => p.x)
-    const ys = pad.points.map((p) => p.y)
-    return {
-      x: (Math.min(...xs) + Math.max(...xs)) / 2,
-      y: (Math.min(...ys) + Math.max(...ys)) / 2,
-    }
+const getCenter = (pad: Pad): Point | null => {
+  if (pad.type !== "pcb_smtpad" || pad.shape !== "polygon") {
+    return { x: pad.x, y: pad.y }
   }
-  return { x: pad.x, y: pad.y }
+  const bounds = getPcbElementBounds(pad)
+  return bounds
+    ? { x: (bounds.minX + bounds.maxX) / 2, y: (bounds.minY + bounds.maxY) / 2 }
+    : null
 }
 
 export const getPads = (json: AnyCircuitElement[], componentId?: string) =>
@@ -36,20 +47,15 @@ export const getLocalPads = (
   json: AnyCircuitElement[],
   component: PcbComponent,
 ): Pad[] => {
-  const angle = (-component.rotation * Math.PI) / 180
-  const cos = Math.cos(angle)
-  const sin = Math.sin(angle)
-  const local = (p: Point): Point => {
-    const x = p.x - component.center.x
-    const y = p.y - component.center.y
-    return { x: x * cos - y * sin, y: x * sin + y * cos }
-  }
-  return getPads(json, component.pcb_component_id).map(
-    (pad): Pad =>
-      pad.type === "pcb_smtpad" && pad.shape === "polygon"
-        ? { ...pad, points: pad.points.map(local) }
-        : { ...pad, ...local(getCenter(pad)) },
+  const boardToLocal = compose(
+    rotateDEG(-component.rotation),
+    translate(-component.center.x, -component.center.y),
   )
+  // The shared transformer mutates its input. The pads here are export copies.
+  return transformPCBElements(
+    structuredClone(getPads(json, component.pcb_component_id)),
+    boardToLocal,
+  ) as Pad[]
 }
 
 // Source-port aliases survive imports that renumber electrical pads (e.g. USB-C
@@ -59,20 +65,16 @@ const getLabeledPads = (
   component: PcbComponent | undefined,
   pads: Pad[],
 ) => {
-  const ports = json.filter(
-    (e): e is Extract<AnyCircuitElement, { type: "source_port" }> =>
-      e.type === "source_port" &&
-      e.source_component_id === component?.source_component_id,
-  )
-  const pcbPorts = new Map(
-    json.flatMap((e) =>
-      e.type === "pcb_port" ? [[e.pcb_port_id, e] as const] : [],
-    ),
-  )
+  const db = cju([...json])
+  const ports = component
+    ? db.source_port.list({
+        source_component_id: component.source_component_id,
+      })
+    : []
   return pads.map((pad) => {
     const hints = (pad.port_hints ?? []).map(normalizeHint)
     const sourceId = pad.pcb_port_id
-      ? pcbPorts.get(pad.pcb_port_id)?.source_port_id
+      ? db.pcb_port.get(pad.pcb_port_id)?.source_port_id
       : undefined
     const candidates = ports.filter((port) =>
       [port.name, String(port.pin_number), ...(port.port_hints ?? [])].some(
@@ -80,13 +82,14 @@ const getLabeledPads = (
       ),
     )
     const port = sourceId
-      ? ports.find((port) => port.source_port_id === sourceId)
+      ? db.source_port.get(sourceId)
       : candidates.length === 1
         ? candidates[0]
         : undefined
-    const names = port
-      ? [port.name, ...(port.port_hints ?? [])].map(normalizeHint)
-      : []
+    const names =
+      port && port.source_component_id === component?.source_component_id
+        ? [port.name, ...(port.port_hints ?? [])].map(normalizeHint)
+        : []
     return {
       type: pad.type,
       center: getCenter(pad),
@@ -119,17 +122,12 @@ const findRotation = (
     return undefined
 
   const candidates = [0, 90, 180, 270].filter((degrees) => {
-    const radians = (degrees * Math.PI) / 180
-    const cos = Math.cos(radians)
-    const sin = Math.sin(radians)
-    const transform = (point: Point): Point => {
-      const x = point.x - supplierCenter.x
-      const y = point.y - supplierCenter.y
-      return {
-        x: x * cos - y * sin + localCenter.x,
-        y: x * sin + y * cos + localCenter.y,
-      }
-    }
+    const supplierToLocal = compose(
+      translate(localCenter.x, localCenter.y),
+      rotateDEG(degrees),
+      translate(-supplierCenter.x, -supplierCenter.y),
+    )
+    const transform = (point: Point) => applyToPoint(supplierToLocal, point)
     return (
       matches.every(
         (m) => distance(m.local, transform(m.supplier)) <= tolerance,
@@ -172,10 +170,13 @@ const getAliasRotation = (local: LabeledPad[], supplier: LabeledPad[]) => {
       reverse.set(j, i)
     }
     if (pairs.size < 2) continue
-    const matches = [...pairs].map(([i, j]) => ({
-      local: local[i]!.center,
-      supplier: supplier[j]!.center,
-    }))
+    const matches: PadMatch[] = []
+    for (const [i, j] of pairs) {
+      const localCenter = local[i]!.center
+      const supplierCenter = supplier[j]!.center
+      if (!localCenter || !supplierCenter) return null
+      matches.push({ local: localCenter, supplier: supplierCenter })
+    }
     const rotation = findRotation(matches)
     // Once there are two matching semantic anchors, do not fall back to
     // numeric indices if their positions disagree.
@@ -188,7 +189,8 @@ const getNamedSmtPads = (pads: LabeledPad[]) => {
   const named = new Map<string, Point>()
   for (const pad of pads) {
     if (pad.type !== "pcb_smtpad") continue
-    if (!pad.contactName || named.has(pad.contactName)) return null
+    if (!pad.center || !pad.contactName || named.has(pad.contactName))
+      return null
     named.set(pad.contactName, pad.center)
   }
   return named
@@ -222,13 +224,16 @@ const getCompleteFootprintRotation = (
     findRotation(matches, (transform) => {
       const remaining = supplier.map((pad) => ({
         type: pad.type,
-        center: transform(pad.center),
+        center: pad.center && transform(pad.center),
       }))
       return local.every((pad) => {
+        const center = pad.center
+        if (!center) return false
         const index = remaining.findIndex(
           (other) =>
             other.type === pad.type &&
-            distance(other.center, pad.center) <= tolerance,
+            other.center &&
+            distance(other.center, center) <= tolerance,
         )
         if (index === -1) return false
         remaining.splice(index, 1)

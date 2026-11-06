@@ -89,8 +89,8 @@ bun test
 
 Pass `{ supplier: "jlcpcb" }` to adjust rotations using
 `pcb_component.pin1_location` and `supplier_pin1_location_map.jlcpcb`. These
-fields must describe the authored and supplier footprint frames; the converter
-does not fetch supplier footprints or analyze pad geometry.
+fields describe the authored and supplier footprint frames used by the
+synchronous converter. The async supplier export below can resolve missing frames.
 
 If either field is missing, or the frames cannot be related by rotation, a
 supplier-specific export **throws by default**. The PCB placement angle alone
