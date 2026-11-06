@@ -18,6 +18,7 @@ import {
 } from "transformation-matrix"
 
 type Pad = PcbSmtPad | PcbPlatedHole
+type PadMatch = { local: Point; supplier: Point }
 
 const numericHint = (hint: string) => /^\d+$/.test(hint)
 const normalizeHint = (hint: string) =>
@@ -85,28 +86,59 @@ const getLabeledPads = (
       : candidates.length === 1
         ? candidates[0]
         : undefined
+    const names =
+      port && port.source_component_id === component?.source_component_id
+        ? [port.name, ...(port.port_hints ?? [])].map(normalizeHint)
+        : []
     return {
+      type: pad.type,
       center: getCenter(pad),
-      hints: new Set([
-        ...hints,
-        ...(port && port.source_component_id === component?.source_component_id
-          ? [port.name, ...(port.port_hints ?? [])].map(normalizeHint)
-          : []),
-      ]),
+      contactName: names.find((name) => name && !numericHint(name)),
+      hints: new Set([...hints, ...names]),
     }
   })
 }
 
-export const getMatchedPadRotation = (
-  localJson: AnyCircuitElement[],
-  component: PcbComponent,
-  localPads: Pad[],
-  supplierJson: AnyCircuitElement[],
-  supplierComponent: PcbComponent | undefined,
-  supplierPads: Pad[],
-): number | null => {
-  const local = getLabeledPads(localJson, component, localPads)
-  const supplier = getLabeledPads(supplierJson, supplierComponent, supplierPads)
+type LabeledPad = ReturnType<typeof getLabeledPads>[number]
+
+// Imported CAD rounds coordinates. Ten micrometres permits that rounding
+// while rejecting reflections, wrong pin maps and different pad pitches.
+const tolerance = 0.01
+const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y)
+
+const findRotation = (
+  matches: PadMatch[],
+  verifyFootprint?: (transform: (point: Point) => Point) => boolean,
+): number | null | undefined => {
+  const centroid = (side: keyof PadMatch): Point => ({
+    x: matches.reduce((sum, m) => sum + m[side].x, 0) / matches.length,
+    y: matches.reduce((sum, m) => sum + m[side].y, 0) / matches.length,
+  })
+  const localCenter = centroid("local")
+  const supplierCenter = centroid("supplier")
+  if (
+    !matches.some((match) => distance(match.local, localCenter) > tolerance * 2)
+  )
+    return undefined
+
+  const candidates = [0, 90, 180, 270].filter((degrees) => {
+    const supplierToLocal = compose(
+      translate(localCenter.x, localCenter.y),
+      rotateDEG(degrees),
+      translate(-supplierCenter.x, -supplierCenter.y),
+    )
+    const transform = (point: Point) => applyToPoint(supplierToLocal, point)
+    return (
+      matches.every(
+        (m) => distance(m.local, transform(m.supplier)) <= tolerance,
+      ) &&
+      (verifyFootprint?.(transform) ?? true)
+    )
+  })
+  return candidates.length === 1 ? candidates[0]! : null
+}
+
+const getAliasRotation = (local: LabeledPad[], supplier: LabeledPad[]) => {
   const unique = (pads: typeof local, semantic: boolean) => {
     const map = new Map<string, number[]>()
     pads.forEach((pad, index) =>
@@ -138,43 +170,91 @@ export const getMatchedPadRotation = (
       reverse.set(j, i)
     }
     if (pairs.size < 2) continue
-    const matches: { local: Point; supplier: Point }[] = []
+    const matches: PadMatch[] = []
     for (const [i, j] of pairs) {
       const localCenter = local[i]!.center
       const supplierCenter = supplier[j]!.center
       if (!localCenter || !supplierCenter) return null
       matches.push({ local: localCenter, supplier: supplierCenter })
     }
-    const centroid = (side: "local" | "supplier"): Point => ({
-      x: matches.reduce((sum, m) => sum + m[side].x, 0) / matches.length,
-      y: matches.reduce((sum, m) => sum + m[side].y, 0) / matches.length,
-    })
-    const localCenter = centroid("local")
-    const supplierCenter = centroid("supplier")
-    // Allow ten micrometres of coordinate rounding in imported CAD.
-    const tolerance = 0.01
-    if (
-      !matches.some(
-        (m) =>
-          Math.hypot(m.local.x - localCenter.x, m.local.y - localCenter.y) >
-          tolerance * 2,
-      )
-    )
-      continue
-    const candidates = [0, 90, 180, 270].filter((degrees) => {
-      const supplierToLocal = compose(
-        translate(localCenter.x, localCenter.y),
-        rotateDEG(degrees),
-        translate(-supplierCenter.x, -supplierCenter.y),
-      )
-      return matches.every(({ local, supplier }) => {
-        const rotated = applyToPoint(supplierToLocal, supplier)
-        return Math.hypot(rotated.x - local.x, rotated.y - local.y) <= tolerance
-      })
-    })
+    const rotation = findRotation(matches)
     // Once there are two matching semantic anchors, do not fall back to
     // numeric indices if their positions disagree.
-    return candidates.length === 1 ? candidates[0]! : null
+    if (rotation !== undefined) return rotation
   }
   return null
+}
+
+const getNamedSmtPads = (pads: LabeledPad[]) => {
+  const named = new Map<string, Point>()
+  for (const pad of pads) {
+    if (pad.type !== "pcb_smtpad") continue
+    if (!pad.center || !pad.contactName || named.has(pad.contactName))
+      return null
+    named.set(pad.contactName, pad.center)
+  }
+  return named
+}
+
+const getCompleteFootprintRotation = (
+  local: LabeledPad[],
+  supplier: LabeledPad[],
+): number | null => {
+  if (local.length !== supplier.length) return null
+  const localContacts = getNamedSmtPads(local)
+  const supplierContacts = getNamedSmtPads(supplier)
+  if (
+    !localContacts ||
+    !supplierContacts ||
+    localContacts.size < 2 ||
+    localContacts.size !== supplierContacts.size
+  )
+    return null
+
+  // Prefer the physical contact names over secondary aliases only when all
+  // SMT contacts match and the same transform fits every pad, including slots.
+  const matches: PadMatch[] = []
+  for (const [name, localPoint] of localContacts) {
+    const supplierPoint = supplierContacts.get(name)
+    if (!supplierPoint) return null
+    matches.push({ local: localPoint, supplier: supplierPoint })
+  }
+
+  return (
+    findRotation(matches, (transform) => {
+      const remaining = supplier.map((pad) => ({
+        type: pad.type,
+        center: pad.center && transform(pad.center),
+      }))
+      return local.every((pad) => {
+        const center = pad.center
+        if (!center) return false
+        const index = remaining.findIndex(
+          (other) =>
+            other.type === pad.type &&
+            other.center &&
+            distance(other.center, center) <= tolerance,
+        )
+        if (index === -1) return false
+        remaining.splice(index, 1)
+        return true
+      })
+    }) ?? null
+  )
+}
+
+export const getMatchedPadRotation = (
+  localJson: AnyCircuitElement[],
+  component: PcbComponent,
+  localPads: Pad[],
+  supplierJson: AnyCircuitElement[],
+  supplierComponent: PcbComponent | undefined,
+  supplierPads: Pad[],
+): number | null => {
+  const local = getLabeledPads(localJson, component, localPads)
+  const supplier = getLabeledPads(supplierJson, supplierComponent, supplierPads)
+  return (
+    getAliasRotation(local, supplier) ??
+    getCompleteFootprintRotation(local, supplier)
+  )
 }
