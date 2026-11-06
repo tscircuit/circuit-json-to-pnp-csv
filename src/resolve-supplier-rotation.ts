@@ -18,6 +18,7 @@ import {
 
 export interface SupplierPickAndPlaceOptions extends PartOrientationOptions {
   supplier: SupplierName
+  partsEngine: NonNullable<PartOrientationOptions["partsEngine"]>
   flip_y_axis?: boolean
 }
 

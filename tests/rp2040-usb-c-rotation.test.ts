@@ -1,14 +1,11 @@
 import { expect, test } from "bun:test"
 import type { AnyCircuitElement } from "circuit-json"
-import {
-  convertCircuitJsonToPickAndPlaceCsv,
-  convertCircuitJsonToSupplierPickAndPlaceCsv,
-} from "../src"
+import { convertCircuitJsonToPickAndPlaceCsv } from "../src"
 import supplier from "./assets/c165948-supplier.circuit.json"
 import board from "./assets/rp2040-usb-c-connectors.circuit.json"
 
 const exportWithSupplier = (footprint: AnyCircuitElement[]) =>
-  convertCircuitJsonToSupplierPickAndPlaceCsv(board as AnyCircuitElement[], {
+  convertCircuitJsonToPickAndPlaceCsv(board as AnyCircuitElement[], {
     supplier: "jlcpcb",
     partsEngine: {
       fetchPartCircuitJson: async ({ supplierPartNumber }) => {
@@ -28,7 +25,9 @@ test("exports supplier rotations for the RP2040 board's renumbered USB-C pads", 
     "J_USB: cannot verify jlcpcb pick-and-place rotation (missing_pin1_location)",
   )
 
-  const csv = await exportWithSupplier(supplier as AnyCircuitElement[])
+  const pendingCsv = exportWithSupplier(supplier as AnyCircuitElement[])
+  expect(pendingCsv).toBeInstanceOf(Promise)
+  const csv = await pendingCsv
   expect(csv.split(/\r?\n/)).toEqual([
     "Designator,Mid X,Mid Y,Layer,Rotation",
     "J_USB,-6.000,16.700,top,180",

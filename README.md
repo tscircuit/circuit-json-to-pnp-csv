@@ -65,13 +65,11 @@ Converts Circuit JSON elements to an array of Pick'n'Place rows.
 
 Returns an array of `PickAndPlaceRow` objects.
 
-### `convertCircuitJsonToPickAndPlaceCsv(soup: AnyCircuitElement[]): string`
+### `convertCircuitJsonToPickAndPlaceCsv`
 
-Converts Circuit JSON elements directly to a CSV string.
-
-- `circuitJson`: An array of Circuit JSON elements.
-
-Returns a string containing the CSV data.
+Converts Circuit JSON elements directly to a CSV string. Passing a `supplier`
+and `partsEngine` returns a promise that resolves to the CSV after looking up
+any missing supplier orientation.
 
 ## Testing
 
@@ -118,12 +116,12 @@ fallback as a verified fabrication placement.
 
 ### Exporting saved boards with missing supplier metadata
 
-Use the asynchronous supplier export with a parts engine:
+Pass a parts engine and await the same CSV function.
 
 ```ts
-import { convertCircuitJsonToSupplierPickAndPlaceCsv } from "circuit-json-to-pnp-csv"
+import { convertCircuitJsonToPickAndPlaceCsv } from "circuit-json-to-pnp-csv"
 
-const csv = await convertCircuitJsonToSupplierPickAndPlaceCsv(circuitJson, {
+const csv = await convertCircuitJsonToPickAndPlaceCsv(circuitJson, {
   supplier: "jlcpcb",
   partsEngine,
 })

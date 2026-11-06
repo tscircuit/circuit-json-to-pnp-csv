@@ -151,13 +151,26 @@ const rowsToCsv = (rows: PickAndPlaceRow[]): string =>
     })),
   )
 
-export const convertCircuitJsonToPickAndPlaceCsv = (
+/** Fetch missing supplier orientation through the supplied parts engine. */
+export function convertCircuitJsonToPickAndPlaceCsv(
   circuitJson: AnyCircuitElement[],
-  opts: PickAndPlaceConversionOptions = {},
-): string => rowsToCsv(convertCircuitJsonToPickAndPlaceRows(circuitJson, opts))
+  opts: SupplierPickAndPlaceOptions,
+): Promise<string>
+/** Convert synchronously using the orientation already in the Circuit JSON. */
+export function convertCircuitJsonToPickAndPlaceCsv(
+  circuitJson: AnyCircuitElement[],
+  opts?: PickAndPlaceConversionOptions & { partsEngine?: undefined },
+): string
+export function convertCircuitJsonToPickAndPlaceCsv(
+  circuitJson: AnyCircuitElement[],
+  opts: PickAndPlaceConversionOptions | SupplierPickAndPlaceOptions = {},
+): string | Promise<string> {
+  if ("partsEngine" in opts && opts.partsEngine)
+    return resolveSupplierCsv(circuitJson, opts)
+  return rowsToCsv(convertCircuitJsonToPickAndPlaceRows(circuitJson, opts))
+}
 
-/** Resolve missing supplier rotations and export all fitted components. */
-export const convertCircuitJsonToSupplierPickAndPlaceCsv = async (
+const resolveSupplierCsv = async (
   circuitJson: AnyCircuitElement[],
   opts: SupplierPickAndPlaceOptions,
 ): Promise<string> => {
