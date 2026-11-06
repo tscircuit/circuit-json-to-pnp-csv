@@ -121,6 +121,26 @@ const preservedCases: Array<
       },
     ],
   ],
+  [
+    "physical mounting hardware model_asset linked by source_component_id",
+    (circuit) => [
+      ...circuit,
+      {
+        type: "cad_component",
+        cad_component_id: "cad_mh1_asset",
+        source_component_id: "source_mh1",
+        anchor_alignment: "center_of_component_on_board_surface",
+        model_object_fit: "contain_within_bounds",
+        position: { x: -15.5, y: -15.5, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        model_asset: {
+          project_relative_path: "assets/m3-standoff.step",
+          url: "https://example.com/assets/m3-standoff.step",
+          mimetype: "model/step",
+        },
+      },
+    ],
+  ],
 ]
 
 test.each(preservedCases)("preserves %s", async (_name, transform) => {
