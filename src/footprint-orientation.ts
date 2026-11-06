@@ -106,10 +106,37 @@ type LabeledPad = ReturnType<typeof getLabeledPads>[number]
 const tolerance = 0.01
 const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y)
 
+const matchesPadCenters = (
+  local: LabeledPad[],
+  supplier: LabeledPad[],
+  transform: (point: Point) => Point,
+): boolean => {
+  if (local.length !== supplier.length) return false
+  const remaining = supplier.map((pad) => ({
+    type: pad.type,
+    center: pad.center && transform(pad.center),
+  }))
+  return local.every((pad) => {
+    const center = pad.center
+    if (!center) return false
+    const index = remaining.findIndex(
+      (other) =>
+        other.type === pad.type &&
+        other.center &&
+        distance(other.center, center) <= tolerance,
+    )
+    if (index === -1) return false
+    remaining.splice(index, 1)
+    return true
+  })
+}
+
 const findRotation = (
   matches: PadMatch[],
-  verifyFootprint?: (transform: (point: Point) => Point) => boolean,
-): number | null | undefined => {
+  local: LabeledPad[],
+  supplier: LabeledPad[],
+): number | null => {
+  if (matches.length < 2) return null
   const centroid = (side: keyof PadMatch): Point => ({
     x: matches.reduce((sum, m) => sum + m[side].x, 0) / matches.length,
     y: matches.reduce((sum, m) => sum + m[side].y, 0) / matches.length,
@@ -119,7 +146,7 @@ const findRotation = (
   if (
     !matches.some((match) => distance(match.local, localCenter) > tolerance * 2)
   )
-    return undefined
+    return null
 
   const candidates = [0, 90, 180, 270].filter((degrees) => {
     const supplierToLocal = compose(
@@ -131,8 +158,7 @@ const findRotation = (
     return (
       matches.every(
         (m) => distance(m.local, transform(m.supplier)) <= tolerance,
-      ) &&
-      (verifyFootprint?.(transform) ?? true)
+      ) && matchesPadCenters(local, supplier, transform)
     )
   })
   return candidates.length === 1 ? candidates[0]! : null
@@ -169,18 +195,26 @@ const getAliasRotation = (local: LabeledPad[], supplier: LabeledPad[]) => {
       pairs.set(i, j)
       reverse.set(j, i)
     }
-    if (pairs.size < 2) continue
+    if (semantic && pairs.size === 0) continue
+    // Named SMT contacts establish electrical identity. For numbered-only
+    // and through-hole-only footprints, require a label match for every pad.
+    const hasSmtPads = local.some((pad) => pad.type === "pcb_smtpad")
+    const requiresLabel = (pad: LabeledPad) =>
+      !semantic || !hasSmtPads || pad.type === "pcb_smtpad"
+    if (
+      local.some((pad, index) => requiresLabel(pad) && !pairs.has(index)) ||
+      supplier.some((pad, index) => requiresLabel(pad) && !reverse.has(index))
+    )
+      return null
     const matches: PadMatch[] = []
     for (const [i, j] of pairs) {
+      if (local[i]!.type !== supplier[j]!.type) return null
       const localCenter = local[i]!.center
       const supplierCenter = supplier[j]!.center
       if (!localCenter || !supplierCenter) return null
       matches.push({ local: localCenter, supplier: supplierCenter })
     }
-    const rotation = findRotation(matches)
-    // Once there are two matching semantic anchors, do not fall back to
-    // numeric indices if their positions disagree.
-    if (rotation !== undefined) return rotation
+    return findRotation(matches, local, supplier)
   }
   return null
 }
@@ -220,27 +254,7 @@ const getCompleteFootprintRotation = (
     matches.push({ local: localPoint, supplier: supplierPoint })
   }
 
-  return (
-    findRotation(matches, (transform) => {
-      const remaining = supplier.map((pad) => ({
-        type: pad.type,
-        center: pad.center && transform(pad.center),
-      }))
-      return local.every((pad) => {
-        const center = pad.center
-        if (!center) return false
-        const index = remaining.findIndex(
-          (other) =>
-            other.type === pad.type &&
-            other.center &&
-            distance(other.center, center) <= tolerance,
-        )
-        if (index === -1) return false
-        remaining.splice(index, 1)
-        return true
-      })
-    }) ?? null
-  )
+  return findRotation(matches, local, supplier)
 }
 
 export const getMatchedPadRotation = (
