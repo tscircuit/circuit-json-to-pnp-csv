@@ -65,13 +65,11 @@ Converts Circuit JSON elements to an array of Pick'n'Place rows.
 
 Returns an array of `PickAndPlaceRow` objects.
 
-### `convertCircuitJsonToPickAndPlaceCsv(soup: AnyCircuitElement[]): string`
+### `convertCircuitJsonToPickAndPlaceCsv`
 
-Converts Circuit JSON elements directly to a CSV string.
-
-- `circuitJson`: An array of Circuit JSON elements.
-
-Returns a string containing the CSV data.
+Converts Circuit JSON elements directly to a CSV string. Passing a `supplier`
+and `partsEngine` returns a promise that resolves to the CSV after looking up
+any missing supplier orientation.
 
 ## Testing
 
@@ -89,8 +87,8 @@ bun test
 
 Pass `{ supplier: "jlcpcb" }` to adjust rotations using
 `pcb_component.pin1_location` and `supplier_pin1_location_map.jlcpcb`. These
-fields must describe the authored and supplier footprint frames; the converter
-does not fetch supplier footprints or analyze pad geometry.
+fields describe the authored and supplier footprint frames used by the
+synchronous converter. The async supplier export below can resolve missing frames.
 
 If either field is missing, or the frames cannot be related by rotation, a
 supplier-specific export **throws by default**. The PCB placement angle alone
@@ -115,6 +113,26 @@ draft must explicitly pass `requireSupplierRotation: false`. In that mode,
 `onRotationWarning` collects structured diagnostics (designator, PCB component
 ID, supplier, reason and message) instead of logging them. Do not use that
 fallback as a verified fabrication placement.
+
+### Exporting saved boards with missing supplier metadata
+
+Pass a parts engine and await the same CSV function.
+
+```ts
+import { convertCircuitJsonToPickAndPlaceCsv } from "circuit-json-to-pnp-csv"
+
+const csv = await convertCircuitJsonToPickAndPlaceCsv(circuitJson, {
+  supplier: "jlcpcb",
+  partsEngine,
+})
+```
+
+The export uses Core's `supplier_rotation_offset_map` when available, followed
+by compatible saved pin-1 frames. For older boards with missing metadata, a
+parts engine can fetch the supplier footprint and run the same pad comparison
+Core uses. It requires matching contact labels and a unique quarter-turn that
+aligns every SMT pad and plated-hole center. An unresolved rotation rejects the
+export with the affected component name.
 
 ### Preparing supplier orientation metadata
 

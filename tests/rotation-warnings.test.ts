@@ -1,5 +1,5 @@
 import { expect, spyOn, test } from "bun:test"
-import type { AnyCircuitElement, PcbComponent } from "circuit-json"
+import type { AnyCircuitElement, PcbComponent, PcbSmtPad } from "circuit-json"
 import {
   type PickAndPlaceRotationWarning,
   convertCircuitJsonToPickAndPlaceCsv,
@@ -146,4 +146,36 @@ test("generic conversion and excluded components do not report missing metadata"
     }),
   ).toEqual([])
   expect(warnings).toEqual([])
+})
+
+test("supplier lookup rejects a rotation supported by only two of three contacts", async () => {
+  const pad = (pin: number, x: number, y: number): PcbSmtPad => ({
+    type: "pcb_smtpad",
+    pcb_smtpad_id: `pad${pin}`,
+    pcb_component_id: "pcb_led",
+    shape: "rect",
+    x,
+    y,
+    width: 0.3,
+    height: 0.3,
+    layer: "top",
+    port_hints: [`pin${pin}`],
+  })
+  const board = [
+    ...circuit({ center: { x: 0, y: 0 }, rotation: 0 }),
+    pad(3, -1, 0),
+    pad(4, 1, 0),
+    pad(5, 0, 2),
+  ]
+  // A 180-degree turn aligns the first two contacts but leaves the third
+  // without an electrical match, even when its center happens to align.
+  for (const y of [-2, 3]) {
+    const supplier = [pad(3, 1, 0), pad(4, -1, 0), pad(6, 0, y)]
+    await expect(
+      convertCircuitJsonToPickAndPlaceCsv(board, {
+        supplier: "jlcpcb",
+        partsEngine: { fetchPartCircuitJson: () => supplier },
+      }),
+    ).rejects.toThrow("cannot match authored and supplier pad orientation")
+  }
 })
