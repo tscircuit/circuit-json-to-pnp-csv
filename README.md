@@ -90,10 +90,13 @@ bun test
 Pass `{ supplier: "jlcpcb" }` to adjust rotations using
 `pcb_component.pin1_location` and `supplier_pin1_location_map.jlcpcb`. These
 fields must describe the authored and supplier footprint frames; the converter
-does not fetch supplier footprints or analyze pad geometry.
+does not fetch supplier footprints or analyze pad geometry. For parts with a
+known JLCPCB assembly orientation, that orientation takes precedence over the
+imported footprint frame. The converter looks up the first JLCPCB part number
+listed on the source component.
 
-If either field is missing, or the frames cannot be related by rotation, the
-converter keeps the PCB rotation **and emits a warning**. Supply
+If either orientation is unavailable or the frames cannot be related by
+rotation, the converter keeps the PCB rotation **and emits a warning**. Supply
 `onRotationWarning` to collect structured diagnostics (designator, PCB component
 ID, supplier, reason and message) instead of logging them.
 

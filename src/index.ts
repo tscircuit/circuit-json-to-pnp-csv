@@ -3,6 +3,8 @@ import {
   type AnyCircuitElement,
   type LayerRef,
   type PcbComponent,
+  type PcbPin1Location,
+  type SourceComponentBase,
   type SupplierName,
   getRotationBetweenPcbPin1Locations,
 } from "circuit-json"
@@ -43,11 +45,19 @@ export interface PickAndPlaceConversionOptions {
 
 const fixedDecimals = 3
 
+// JLCPCB assembly zero can differ from the imported EasyEDA footprint.
+// The C1850278 assembly preview at 0° has pad 1 first from the left on
+// the bottom edge, in the supplier's unrotated, top-view frame.
+const jlcpcbAssemblyPin1Locations = new Map<string, PcbPin1Location>([
+  ["C1850278", "bottomside_left"], // TI TPS26632RGER
+])
+
 const normalizeRotation = (rotation: number): number =>
   ((rotation % 360) + 360) % 360
 
 const getPickAndPlaceRotation = (
   pcbComponent: PcbComponent,
+  sourceComponent: SourceComponentBase,
   designator: string,
   opts: PickAndPlaceConversionOptions,
 ): number => {
@@ -72,8 +82,14 @@ const getPickAndPlaceRotation = (
   }
 
   if (!pcbComponent.pin1_location) return unresolved("missing_pin1_location")
+  const supplierPartNumber =
+    sourceComponent.supplier_part_numbers?.[supplier]?.[0]
+  const assemblyPin1Location =
+    supplier === "jlcpcb" && supplierPartNumber
+      ? jlcpcbAssemblyPin1Locations.get(supplierPartNumber)
+      : undefined
   const supplierPin1Location =
-    pcbComponent.supplier_pin1_location_map?.[supplier]
+    assemblyPin1Location ?? pcbComponent.supplier_pin1_location_map?.[supplier]
   if (!supplierPin1Location) return unresolved("missing_supplier_pin1_location")
 
   const rotationAdjustment = getRotationBetweenPcbPin1Locations(
@@ -113,7 +129,12 @@ export const convertCircuitJsonToPickAndPlaceRows = (
         mid_x: placementPosition.x,
         mid_y: placementPosition.y * (opts.flip_y_axis ? -1 : 1),
         layer: element.layer,
-        rotation: getPickAndPlaceRotation(element, designator, opts),
+        rotation: getPickAndPlaceRotation(
+          element,
+          source_component,
+          designator,
+          opts,
+        ),
       })
     }
   }
