@@ -3,6 +3,7 @@ import {
   type AnyCircuitElement,
   type LayerRef,
   type PcbComponent,
+  type PcbPin1Location,
   type SupplierName,
   getRotationBetweenPcbPin1Locations,
 } from "circuit-json"
@@ -35,6 +36,12 @@ export interface PickAndPlaceConversionOptions {
    * the selected supplier footprint's pin-1 frame when both are available.
    */
   supplier?: SupplierName
+  /**
+   * Verified pin-1 locations at the selected supplier's assembly zero, by
+   * designator. Values describe the unrotated package in top view and take
+   * precedence over supplier footprint metadata for those components.
+   */
+  assemblyPin1Locations?: Readonly<Partial<Record<string, PcbPin1Location>>>
   /** Reject unresolved supplier rotations instead of using the PCB rotation. */
   requireSupplierRotation?: boolean
   /** Called for each unresolved rotation. Defaults to console.warn. */
@@ -73,7 +80,9 @@ const getPickAndPlaceRotation = (
 
   if (!pcbComponent.pin1_location) return unresolved("missing_pin1_location")
   const supplierPin1Location =
-    pcbComponent.supplier_pin1_location_map?.[supplier]
+    (Object.hasOwn(opts.assemblyPin1Locations ?? {}, designator)
+      ? opts.assemblyPin1Locations?.[designator]
+      : undefined) ?? pcbComponent.supplier_pin1_location_map?.[supplier]
   if (!supplierPin1Location) return unresolved("missing_supplier_pin1_location")
 
   const rotationAdjustment = getRotationBetweenPcbPin1Locations(

@@ -28,19 +28,17 @@ const circuit: AnyCircuitElement[] = [
   },
 ]
 
-test.failing(
-  "places the JLCPCB TPS26632RGER pin 1 on the board's pin 1",
-  () => {
-    // JLCPCB's assembly preview put the package dot at the lower left for
-    // the exported 0°. The routed board has pad 1 at the upper left, so the
-    // top-side package needs a clockwise quarter-turn (270° in the CPL).
-    expect(
-      convertCircuitJsonToPickAndPlaceCsv(circuit, {
-        supplier: "jlcpcb",
-        requireSupplierRotation: true,
-      }),
-    ).toBe(
-      "Designator,Mid X,Mid Y,Layer,Rotation\r\nU_EFUSE,13.000,12.500,top,270",
-    )
-  },
-)
+test("places the JLCPCB TPS26632RGER pin 1 on the board's pin 1", () => {
+  // JLCPCB's assembly preview put the package dot at the lower left for
+  // the exported 0°. The routed board has pad 1 at the upper left, so the
+  // top-side package needs a clockwise quarter-turn (270° in the CPL).
+  expect(
+    convertCircuitJsonToPickAndPlaceCsv(circuit, {
+      supplier: "jlcpcb",
+      assemblyPin1Locations: { U_EFUSE: "bottomside_left" },
+      requireSupplierRotation: true,
+    }),
+  ).toBe(
+    "Designator,Mid X,Mid Y,Layer,Rotation\r\nU_EFUSE,13.000,12.500,top,270",
+  )
+})

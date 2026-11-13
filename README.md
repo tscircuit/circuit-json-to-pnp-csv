@@ -90,7 +90,11 @@ bun test
 Pass `{ supplier: "jlcpcb" }` to adjust rotations using
 `pcb_component.pin1_location` and `supplier_pin1_location_map.jlcpcb`. These
 fields must describe the authored and supplier footprint frames; the converter
-does not fetch supplier footprints or analyze pad geometry.
+does not fetch supplier footprints or analyze pad geometry. If the assembly
+provider uses a different zero orientation, pass `assemblyPin1Locations` with
+verified top-view pin-1 locations keyed by designator. For those components the
+converter uses the assembly reference before the imported footprint reference.
+The map applies to the selected supplier for that export.
 
 If either field is missing, or the frames cannot be related by rotation, the
 converter keeps the PCB rotation **and emits a warning**. Supply
