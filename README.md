@@ -88,14 +88,21 @@ bun test
 ### Supplier rotations and unresolved metadata
 
 Pass `{ supplier: "jlcpcb" }` to adjust rotations using
-`pcb_component.pin1_location` and `supplier_pin1_location_map.jlcpcb`. These
-fields must describe the authored and supplier footprint frames; the converter
-does not fetch supplier footprints or analyze pad geometry.
+`pcb_component.pin1_location` and `supplier_pin1_location_map.jlcpcb` to match
+the authored and supplier CAD footprint frames. If the parts engine supplies an
+entry in `supplier_assembly_rotation_offset_map`, the converter adds that
+supplier's offset to the CAD angle. The offset is the counterclockwise machine
+angle that matches the supplier's unrotated CAD footprint; an explicit zero
+means the two references agree.
+The map applies to the selected supplier for that export.
 
 If either field is missing, or the frames cannot be related by rotation, the
 converter keeps the PCB rotation **and emits a warning**. Supply
 `onRotationWarning` to collect structured diagnostics (designator, PCB component
-ID, supplier, reason and message) instead of logging them.
+ID, supplier, reason and message) instead of logging them. With a callback,
+`missing_supplier_assembly_rotation` identifies orientation-sensitive parts
+whose rows use the CAD angle without a factory reference. The converter cannot
+derive the factory zero from footprint pads or the 3D model.
 
 For fabrication pipelines, reject unresolved rotations:
 
@@ -107,7 +114,8 @@ const csv = convertCircuitJsonToPickAndPlaceCsv(circuitJson, {
 ```
 
 `requireSupplierRotation` requires a supplier and throws before returning rows
-or CSV when any included component has unresolved rotation metadata. Do-not-place
+or CSV when any included component cannot be aligned to supplier CAD. It does
+not require a separate factory reference. Do-not-place
 components and test points are excluded as usual. Without a supplier, ordinary
 conversion retains PCB rotations without orientation warnings.
 
@@ -133,7 +141,9 @@ const csv = convertCircuitJsonToPickAndPlaceCsv(prepared, { supplier: "jlcpcb" }
 The helper accepts `PartOrientationOptions`, a minimal contract compatible with
 a tscircuit platform config. It calls `partsEngine.fetchPartCircuitJson` with the
 same `supplierPartNumber` and `platformFetch` arguments used by core, then writes
-the analyzed frame to `supplier_pin1_location_map[supplier]`. No supplier client,
+the analyzed frame to `supplier_pin1_location_map[supplier]`. When the catalog
+supplies an assembly offset for that same frame, it is copied into
+`supplier_assembly_rotation_offset_map[supplier]`. No supplier client,
 URL, or default parts engine is built into the helper.
 
 By default it processes the first part number for every supplier listed in each
@@ -149,4 +159,4 @@ parts and test points. Bottom-side components need explicit `pin1_location`
 metadata because prebuilt JSON does not record the original footprint layer
 needed to undo mirroring safely. The helper does not fetch data for components
 without supplier part numbers; use `requireSupplierRotation` during conversion to
-require verified rotations for every included row.
+require CAD alignment for every included row.
