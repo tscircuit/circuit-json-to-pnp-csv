@@ -1,9 +1,17 @@
 import { expect, test } from "bun:test"
-import type { AnyCircuitElement } from "circuit-json"
-import { convertCircuitJsonToPickAndPlaceCsv } from "../src"
+import type { AnyCircuitElement, PcbComponent } from "circuit-json"
+import {
+  convertCircuitJsonToPickAndPlaceCsv,
+  type PickAndPlaceRotationWarning,
+} from "../src"
 
-// The source and placement metadata are from NEMA 23 v1.4.26.
-const circuit: AnyCircuitElement[] = [
+// CAD reference and placement from NEMA 23 v1.4.26. The production
+// review image does not establish the angle JLCPCB used to render it.
+const circuit = (
+  metadata: {
+    supplier_assembly_rotation_offset_map?: { jlcpcb: number }
+  } = {},
+): AnyCircuitElement[] => [
   {
     type: "source_component",
     source_component_id: "source_component_46",
@@ -25,22 +33,42 @@ const circuit: AnyCircuitElement[] = [
     obstructs_within_bounds: true,
     pin1_location: "bottomside_left",
     supplier_pin1_location_map: { jlcpcb: "leftside_top" },
-  },
+    ...metadata,
+  } satisfies PcbComponent,
 ]
 
+test("the TPS26632RGER fixture exports the EasyEDA CAD angle", () => {
+  expect(
+    convertCircuitJsonToPickAndPlaceCsv(circuit(), { supplier: "jlcpcb" }),
+  ).toBe("Designator,Mid X,Mid Y,Layer,Rotation\r\nU_EFUSE,13.000,12.500,top,0")
+})
+
 test.failing(
-  "places the JLCPCB TPS26632RGER pin 1 on the board's pin 1",
+  "CAD alignment alone is reported as an unverified assembly angle",
   () => {
-    // JLCPCB's assembly preview put the package dot at the lower left for
-    // the exported 0°. The routed board has pad 1 at the upper left, so the
-    // top-side package needs a clockwise quarter-turn (270° in the CPL).
+    const warnings: PickAndPlaceRotationWarning[] = []
+    convertCircuitJsonToPickAndPlaceCsv(circuit(), {
+      supplier: "jlcpcb",
+      onRotationWarning: (warning) => warnings.push(warning),
+    })
+    expect(warnings).toMatchObject([
+      { designator: "U_EFUSE", reason: "missing_supplier_assembly_rotation" },
+    ])
+  },
+)
+
+test.failing(
+  "supplier assembly zero is used separately from CAD alignment",
+  () => {
+    // A synthetic offset exercises conversion without asserting JLCPCB's
+    // actual rotation for this order.
     expect(
-      convertCircuitJsonToPickAndPlaceCsv(circuit, {
-        supplier: "jlcpcb",
-        requireSupplierRotation: true,
-      }),
+      convertCircuitJsonToPickAndPlaceCsv(
+        circuit({ supplier_assembly_rotation_offset_map: { jlcpcb: 180 } }),
+        { supplier: "jlcpcb" },
+      ),
     ).toBe(
-      "Designator,Mid X,Mid Y,Layer,Rotation\r\nU_EFUSE,13.000,12.500,top,270",
+      "Designator,Mid X,Mid Y,Layer,Rotation\r\nU_EFUSE,13.000,12.500,top,180",
     )
   },
 )
