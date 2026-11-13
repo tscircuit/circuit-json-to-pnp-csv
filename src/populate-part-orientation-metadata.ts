@@ -7,6 +7,10 @@ import {
   getRotationBetweenPcbPin1Locations,
   pcb_pin1_location,
 } from "circuit-json"
+import {
+  getSupplierAssemblyRotationOffset,
+  type PcbComponentWithAssemblyRotation,
+} from "./supplier-assembly-rotation"
 
 /** Minimal parts-engine contract; compatible with a tscircuit platform config. */
 export interface PartOrientationOptions {
@@ -24,6 +28,26 @@ export interface PartOrientationOptions {
   }
   partsEngineDisabled?: boolean
   platformFetch?: typeof fetch
+}
+
+type SupplierOrientation = {
+  cadPin1Location: PcbPin1Location | null
+  assemblyOffset?: number
+}
+
+const fetchSupplierOrientation = async (
+  { supplier, partNumber }: { supplier: SupplierName; partNumber: string },
+  { partsEngine, platformFetch }: PartOrientationOptions,
+): Promise<SupplierOrientation | undefined> => {
+  const footprint = await partsEngine?.fetchPartCircuitJson?.({
+    supplierPartNumber: partNumber,
+    platformFetch,
+  })
+  if (!footprint?.length) return undefined
+  return {
+    cadPin1Location: analyzePcbPin1Location(footprint),
+    assemblyOffset: getSupplierAssemblyRotationOffset(footprint, supplier),
+  }
 }
 
 /** Recover the authored frame from placed pads without changing routed geometry. */
@@ -72,10 +96,14 @@ export const populatePartOrientationMetadata = async (
         : [],
     ),
   )
-  const supplierLocations = new Map<string, Promise<PcbPin1Location | null>>()
+  const supplierOrientations = new Map<
+    string,
+    Promise<SupplierOrientation | undefined>
+  >()
   const errors: string[] = []
-  for (const component of prepared) {
-    if (component.type !== "pcb_component" || component.do_not_place) continue
+  for (const element of prepared) {
+    if (element.type !== "pcb_component" || element.do_not_place) continue
+    const component: PcbComponentWithAssemblyRotation = element
     const source = sources.get(component.source_component_id)
     if (!source || source.ftype === "simple_test_point") continue
     const suppliers = platform.supplier
@@ -99,41 +127,50 @@ export const populatePartOrientationMetadata = async (
         continue
       }
       let supplierLocation = component.supplier_pin1_location_map?.[supplier]
-      if (!supplierLocation) {
-        const partsEngine = platform.partsEngine
-        if (
-          platform.partsEngineDisabled ||
-          !partsEngine?.fetchPartCircuitJson
-        ) {
-          errors.push(
-            `${label}: supplier pin-1 orientation is missing and the parts engine is disabled or unavailable`,
-          )
-          continue
-        }
+      let assemblyOffset =
+        component.supplier_assembly_rotation_offset_map?.[supplier]
+      const partsEngine = platform.partsEngine
+      const canFetch =
+        !platform.partsEngineDisabled && partsEngine?.fetchPartCircuitJson
+      if (!supplierLocation && !canFetch) {
+        errors.push(
+          `${label}: supplier pin-1 orientation is missing and the parts engine is disabled or unavailable`,
+        )
+        continue
+      }
+      if (
+        canFetch &&
+        (!supplierLocation ||
+          (assemblyOffset === undefined && !source.are_pins_interchangeable))
+      ) {
         try {
           const cacheKey = `${supplier}:${partNumber}`
-          let pending = supplierLocations.get(cacheKey)
+          let pending = supplierOrientations.get(cacheKey)
           if (!pending) {
-            pending = Promise.resolve()
-              .then(() =>
-                partsEngine.fetchPartCircuitJson!({
-                  supplierPartNumber: partNumber,
-                  platformFetch: platform.platformFetch,
-                }),
-              )
-              .then((supplierJson) =>
-                supplierJson?.length
-                  ? analyzePcbPin1Location(supplierJson)
-                  : null,
-              )
-            supplierLocations.set(cacheKey, pending)
+            pending = fetchSupplierOrientation(
+              { supplier, partNumber },
+              platform,
+            )
+            supplierOrientations.set(cacheKey, pending)
           }
-          supplierLocation = (await pending) ?? undefined
+          const catalogOrientation = await pending
+          const catalogLocation = catalogOrientation?.cadPin1Location
+          // An offset is defined relative to the exact catalog CAD frame.
+          if (
+            catalogLocation &&
+            (!supplierLocation || supplierLocation === catalogLocation)
+          ) {
+            supplierLocation = catalogLocation
+            assemblyOffset ??= catalogOrientation.assemblyOffset
+          }
         } catch (error) {
-          errors.push(
-            `${label}: supplier orientation lookup failed: ${error instanceof Error ? error.message : String(error)}`,
-          )
-          continue
+          // An optional assembly lookup must not break an existing CAD export.
+          if (!supplierLocation) {
+            errors.push(
+              `${label}: supplier orientation lookup failed: ${error instanceof Error ? error.message : String(error)}`,
+            )
+            continue
+          }
         }
       }
       const supplierResult = pcb_pin1_location.safeParse(supplierLocation)
@@ -156,11 +193,17 @@ export const populatePartOrientationMetadata = async (
         ...component.supplier_pin1_location_map,
         [supplier]: supplierResult.data,
       }
+      if (assemblyOffset !== undefined) {
+        component.supplier_assembly_rotation_offset_map = {
+          ...component.supplier_assembly_rotation_offset_map,
+          [supplier]: assemblyOffset,
+        }
+      }
     }
   }
   if (errors.length) {
     throw new Error(
-      `Unverified supplier pick-and-place rotations:\n${errors.join("\n")}\nEnable the parts engine or provide verified pin1_location and supplier_pin1_location_map entries before fabrication export.`,
+      `Unverified supplier pick-and-place rotations:\n${errors.join("\n")}\nEnable the parts engine or provide the authored and supplier CAD pin-1 frames before export.`,
     )
   }
   return prepared

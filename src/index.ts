@@ -2,13 +2,12 @@ import { su } from "@tscircuit/soup-util"
 import {
   type AnyCircuitElement,
   type LayerRef,
-  type PcbComponent,
-  type PcbPin1Location,
   type SupplierName,
   getRotationBetweenPcbPin1Locations,
 } from "circuit-json"
 import Papa from "papaparse"
 import { isBareMountingHole } from "./is-bare-mounting-hole"
+import type { PcbComponentWithAssemblyRotation } from "./supplier-assembly-rotation"
 
 export interface PickAndPlaceRow {
   designator: string
@@ -26,6 +25,7 @@ export interface PickAndPlaceRotationWarning {
     | "missing_pin1_location"
     | "missing_supplier_pin1_location"
     | "incompatible_pin1_locations"
+    | "missing_supplier_assembly_rotation"
   message: string
 }
 
@@ -33,18 +33,16 @@ export interface PickAndPlaceConversionOptions {
   flip_y_axis?: boolean
   /**
    * Adjust component rotations from the authored footprint's pin-1 frame to
-   * the selected supplier footprint's pin-1 frame when both are available.
+   * the selected supplier footprint's pin-1 frame and apply any separately
+   * supplied factory assembly rotation.
    */
   supplier?: SupplierName
-  /**
-   * Verified pin-1 locations at the selected supplier's assembly zero, by
-   * designator. Values describe the unrotated package in top view and take
-   * precedence over supplier footprint metadata for those components.
-   */
-  assemblyPin1Locations?: Readonly<Partial<Record<string, PcbPin1Location>>>
-  /** Reject unresolved supplier rotations instead of using the PCB rotation. */
+  /** Reject unresolved CAD alignment instead of using the PCB rotation. */
   requireSupplierRotation?: boolean
-  /** Called for each unresolved rotation. Defaults to console.warn. */
+  /**
+   * Called for unresolved CAD alignment and for known CAD angles without a
+   * factory reference. By default, only unresolved CAD alignment is logged.
+   */
   onRotationWarning?: (warning: PickAndPlaceRotationWarning) => void
 }
 
@@ -54,8 +52,15 @@ const normalizeRotation = (rotation: number): number =>
   ((rotation % 360) + 360) % 360
 
 const getPickAndPlaceRotation = (
-  pcbComponent: PcbComponent,
-  designator: string,
+  {
+    pcbComponent,
+    designator,
+    arePinsInterchangeable,
+  }: {
+    pcbComponent: PcbComponentWithAssemblyRotation
+    designator: string
+    arePinsInterchangeable?: boolean
+  },
   opts: PickAndPlaceConversionOptions,
 ): number => {
   const { supplier } = opts
@@ -80,9 +85,7 @@ const getPickAndPlaceRotation = (
 
   if (!pcbComponent.pin1_location) return unresolved("missing_pin1_location")
   const supplierPin1Location =
-    (Object.hasOwn(opts.assemblyPin1Locations ?? {}, designator)
-      ? opts.assemblyPin1Locations?.[designator]
-      : undefined) ?? pcbComponent.supplier_pin1_location_map?.[supplier]
+    pcbComponent.supplier_pin1_location_map?.[supplier]
   if (!supplierPin1Location) return unresolved("missing_supplier_pin1_location")
 
   const rotationAdjustment = getRotationBetweenPcbPin1Locations(
@@ -92,7 +95,23 @@ const getPickAndPlaceRotation = (
   if (rotationAdjustment === null)
     return unresolved("incompatible_pin1_locations")
 
-  return normalizeRotation(pcbComponent.rotation + rotationAdjustment)
+  const cadRotation = pcbComponent.rotation + rotationAdjustment
+  const assemblyOffset =
+    pcbComponent.supplier_assembly_rotation_offset_map?.[supplier]
+  if (assemblyOffset !== undefined && Number.isFinite(assemblyOffset)) {
+    return normalizeRotation(cadRotation + assemblyOffset)
+  }
+  const fallbackRotation = normalizeRotation(cadRotation)
+  if (!arePinsInterchangeable) {
+    opts.onRotationWarning?.({
+      designator,
+      pcb_component_id: pcbComponent.pcb_component_id,
+      supplier,
+      reason: "missing_supplier_assembly_rotation",
+      message: `${designator}: using ${supplier} CAD rotation ${fallbackRotation}°; the factory assembly zero is unverified.`,
+    })
+  }
+  return fallbackRotation
 }
 
 export const convertCircuitJsonToPickAndPlaceRows = (
@@ -122,7 +141,14 @@ export const convertCircuitJsonToPickAndPlaceRows = (
         mid_x: placementPosition.x,
         mid_y: placementPosition.y * (opts.flip_y_axis ? -1 : 1),
         layer: element.layer,
-        rotation: getPickAndPlaceRotation(element, designator, opts),
+        rotation: getPickAndPlaceRotation(
+          {
+            pcbComponent: element,
+            designator,
+            arePinsInterchangeable: source_component.are_pins_interchangeable,
+          },
+          opts,
+        ),
       })
     }
   }

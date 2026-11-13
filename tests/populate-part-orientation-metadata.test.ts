@@ -58,6 +58,7 @@ test("recovers SK9822 authored frame from routed pads without moving any geometr
   expect(pcb(prepared).supplier_pin1_location_map?.jlcpcb).toBe(
     "bottomside_left",
   )
+
   expect(fetchPartCircuitJson).toHaveBeenCalledWith({
     supplierPartNumber: "C5378730",
     platformFetch,
@@ -66,6 +67,53 @@ test("recovers SK9822 authored frame from routed pads without moving any geometr
     convertCircuitJsonToPickAndPlaceRows(prepared, { supplier: "jlcpcb" })[0]!
       .rotation,
   ).toBe(90)
+})
+
+test("uses assembly offsets from the catalog for different parts and reports missing data", async () => {
+  const prepared = await Promise.all(
+    [
+      { partNumber: "C111111", assemblyOffset: -90 },
+      { partNumber: "C222222", assemblyOffset: 0 },
+      { partNumber: "C333333", assemblyOffset: undefined },
+    ].map(async ({ partNumber, assemblyOffset }) => {
+      const original = circuit()
+      const source = original.find((e) => e.type === "source_component")!
+      source.supplier_part_numbers = { jlcpcb: [partNumber] }
+      // Even a board that already has the CAD frame may need the factory offset.
+      pcb(original).supplier_pin1_location_map = { jlcpcb: "bottomside_left" }
+      const catalogComponent = {
+        ...pcb(original),
+        pcb_component_id: "supplier",
+        center: { x: 0, y: 0 },
+        rotation: 0,
+        ...(assemblyOffset !== undefined && {
+          supplier_assembly_rotation_offset_map: { jlcpcb: assemblyOffset },
+        }),
+      }
+      const fetchPartCircuitJson = mock(async () => [
+        catalogComponent,
+        ...supplierPads,
+      ])
+      const prepared = await populatePartOrientationMetadata(original, {
+        partsEngine: { fetchPartCircuitJson },
+      })
+      expect(fetchPartCircuitJson).toHaveBeenCalledWith({
+        supplierPartNumber: partNumber,
+        platformFetch: undefined,
+      })
+      const warnings: string[] = []
+      const [row] = convertCircuitJsonToPickAndPlaceRows(prepared, {
+        supplier: "jlcpcb",
+        onRotationWarning: ({ reason }) => warnings.push(reason),
+      })
+      return { rotation: row!.rotation, warnings }
+    }),
+  )
+  expect(prepared).toEqual([
+    { rotation: 0, warnings: [] },
+    { rotation: 90, warnings: [] },
+    { rotation: 90, warnings: ["missing_supplier_assembly_rotation"] },
+  ])
 })
 
 test("preserves explicit metadata, including bottom-side frames, without fetching", async () => {
