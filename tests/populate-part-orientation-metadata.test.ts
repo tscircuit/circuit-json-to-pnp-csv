@@ -58,6 +58,7 @@ test("recovers SK9822 authored frame from routed pads without moving any geometr
   expect(pcb(prepared).supplier_pin1_location_map?.jlcpcb).toBe(
     "bottomside_left",
   )
+
   expect(fetchPartCircuitJson).toHaveBeenCalledWith({
     supplierPartNumber: "C5378730",
     platformFetch,
@@ -68,8 +69,55 @@ test("recovers SK9822 authored frame from routed pads without moving any geometr
   ).toBe(90)
 })
 
-test("preserves explicit metadata, including bottom-side frames, without fetching", async () => {
-  const original = circuit()
+test("uses assembly offsets from the catalog for different parts and reports missing data", async () => {
+  const prepared = await Promise.all(
+    [
+      { partNumber: "C111111", assemblyOffset: -90 },
+      { partNumber: "C222222", assemblyOffset: 0 },
+      { partNumber: "C333333", assemblyOffset: undefined },
+    ].map(async ({ partNumber, assemblyOffset }) => {
+      const original = circuit()
+      const source = original.find((e) => e.type === "source_component")!
+      source.supplier_part_numbers = { jlcpcb: [partNumber] }
+      // Even a board that already has the CAD frame may need the factory offset.
+      pcb(original).supplier_pin1_location_map = { jlcpcb: "bottomside_left" }
+      const catalogComponent = {
+        ...pcb(original),
+        pcb_component_id: "supplier",
+        center: { x: 0, y: 0 },
+        rotation: 0,
+        ...(assemblyOffset !== undefined && {
+          supplier_assembly_rotation_offset_map: { jlcpcb: assemblyOffset },
+        }),
+      }
+      const fetchPartCircuitJson = mock(async () => [
+        catalogComponent,
+        ...supplierPads,
+      ])
+      const prepared = await populatePartOrientationMetadata(original, {
+        partsEngine: { fetchPartCircuitJson },
+      })
+      expect(fetchPartCircuitJson).toHaveBeenCalledWith({
+        supplierPartNumber: partNumber,
+        platformFetch: undefined,
+      })
+      const warnings: string[] = []
+      const [row] = convertCircuitJsonToPickAndPlaceRows(prepared, {
+        supplier: "jlcpcb",
+        onRotationWarning: ({ reason }) => warnings.push(reason),
+      })
+      return { rotation: row!.rotation, warnings }
+    }),
+  )
+  expect(prepared).toEqual([
+    { rotation: 0, warnings: [] },
+    { rotation: 90, warnings: [] },
+    { rotation: 90, warnings: ["missing_supplier_assembly_rotation"] },
+  ])
+})
+
+test("preserves explicit frames without numbered pads or supplier lookup", async () => {
+  const original = circuit().filter((e) => e.type !== "pcb_smtpad")
   Object.assign(pcb(original), {
     layer: "bottom",
     pin1_location: "leftside_top",
@@ -85,12 +133,14 @@ test("preserves explicit metadata, including bottom-side frames, without fetchin
   ).toEqual(original)
 })
 
-test("does not infer bottom-side frames when original footprint mirroring is unknown", async () => {
-  const original = circuit()
+test("rejects bottom-side frames without numbered pads", async () => {
+  const original = circuit().filter((e) => e.type !== "pcb_smtpad")
   pcb(original).layer = "bottom"
   await expect(
     populatePartOrientationMetadata(original, withSupplier()),
-  ).rejects.toThrow("bottom-side JSON requires explicit pin1_location")
+  ).rejects.toThrow(
+    "cannot determine authored pin-1 orientation from numbered pads",
+  )
 })
 
 test("reports disabled lookup instead of exporting an unverified rotation", async () => {

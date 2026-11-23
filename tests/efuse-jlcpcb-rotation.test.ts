@@ -43,32 +43,26 @@ test("the TPS26632RGER fixture exports the EasyEDA CAD angle", () => {
   ).toBe("Designator,Mid X,Mid Y,Layer,Rotation\r\nU_EFUSE,13.000,12.500,top,0")
 })
 
-test.failing(
-  "CAD alignment alone is reported as an unverified assembly angle",
-  () => {
-    const warnings: PickAndPlaceRotationWarning[] = []
-    convertCircuitJsonToPickAndPlaceCsv(circuit(), {
-      supplier: "jlcpcb",
-      onRotationWarning: (warning) => warnings.push(warning),
-    })
-    expect(warnings).toMatchObject([
-      { designator: "U_EFUSE", reason: "missing_supplier_assembly_rotation" },
-    ])
-  },
-)
+test("CAD alignment alone is reported as an unverified assembly angle", () => {
+  const warnings: PickAndPlaceRotationWarning[] = []
+  convertCircuitJsonToPickAndPlaceCsv(circuit(), {
+    supplier: "jlcpcb",
+    onRotationWarning: (warning) => warnings.push(warning),
+  })
+  expect(warnings).toMatchObject([
+    { designator: "U_EFUSE", reason: "missing_supplier_assembly_rotation" },
+  ])
+})
 
-test.failing(
-  "supplier assembly zero is used separately from CAD alignment",
-  () => {
-    // A synthetic offset exercises conversion without asserting JLCPCB's
-    // actual rotation for this order.
-    expect(
-      convertCircuitJsonToPickAndPlaceCsv(
-        circuit({ supplier_assembly_rotation_offset_map: { jlcpcb: 180 } }),
-        { supplier: "jlcpcb" },
-      ),
-    ).toBe(
-      "Designator,Mid X,Mid Y,Layer,Rotation\r\nU_EFUSE,13.000,12.500,top,180",
-    )
-  },
-)
+test("supplier assembly zero is used separately from CAD alignment", () => {
+  // A synthetic offset exercises conversion without asserting JLCPCB's
+  // actual rotation for this order.
+  expect(
+    convertCircuitJsonToPickAndPlaceCsv(
+      circuit({ supplier_assembly_rotation_offset_map: { jlcpcb: 180 } }),
+      { supplier: "jlcpcb" },
+    ),
+  ).toBe(
+    "Designator,Mid X,Mid Y,Layer,Rotation\r\nU_EFUSE,13.000,12.500,top,180",
+  )
+})
