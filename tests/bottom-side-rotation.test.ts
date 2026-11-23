@@ -72,38 +72,35 @@ for (const {
   offset,
   label,
 } of cases) {
-  test.failing(
-    `JLCPCB bottom component view: bottom ${rotation} degrees, ${label}, flip=${flip_y_axis}`,
-    () => {
-      const input = circuit({ rotation, ...metadata })
-      const original = structuredClone(input)
-      const warnings: PickAndPlaceRotationWarning[] = []
-      const opts = {
-        supplier: "jlcpcb" as const,
-        flip_y_axis,
-        requireSupplierRotation: label !== "unverified",
-        onRotationWarning: (warning: PickAndPlaceRotationWarning) =>
-          warnings.push(warning),
-      }
-      const expectedRotation = (mirrored + offset) % 360
-      expect(convertCircuitJsonToPickAndPlaceRows(input, opts)).toEqual([
-        {
-          designator: "U1",
-          mid_x: 12.5,
-          mid_y: flip_y_axis ? 4.25 : -4.25,
-          layer: "bottom",
-          rotation: expectedRotation,
-        },
-      ])
-      expect(warnings.map(({ reason }) => reason)).toEqual([
-        label === "unverified"
-          ? "missing_pin1_location"
-          : "missing_supplier_assembly_rotation",
-      ])
-      expect(convertCircuitJsonToPickAndPlaceCsv(input, opts)).toBe(
-        `Designator,Mid X,Mid Y,Layer,Rotation\r\nU1,12.500,${flip_y_axis ? "4.250" : "-4.250"},bottom,${expectedRotation}`,
-      )
-      expect(input).toEqual(original)
-    },
-  )
+  test(`JLCPCB bottom component view: bottom ${rotation} degrees, ${label}, flip=${flip_y_axis}`, () => {
+    const input = circuit({ rotation, ...metadata })
+    const original = structuredClone(input)
+    const warnings: PickAndPlaceRotationWarning[] = []
+    const opts = {
+      supplier: "jlcpcb" as const,
+      flip_y_axis,
+      requireSupplierRotation: label !== "unverified",
+      onRotationWarning: (warning: PickAndPlaceRotationWarning) =>
+        warnings.push(warning),
+    }
+    const expectedRotation = (mirrored + offset) % 360
+    expect(convertCircuitJsonToPickAndPlaceRows(input, opts)).toEqual([
+      {
+        designator: "U1",
+        mid_x: 12.5,
+        mid_y: flip_y_axis ? 4.25 : -4.25,
+        layer: "bottom",
+        rotation: expectedRotation,
+      },
+    ])
+    expect(warnings.map(({ reason }) => reason)).toEqual([
+      label === "unverified"
+        ? "missing_pin1_location"
+        : "missing_supplier_assembly_rotation",
+    ])
+    expect(convertCircuitJsonToPickAndPlaceCsv(input, opts)).toBe(
+      `Designator,Mid X,Mid Y,Layer,Rotation\r\nU1,12.500,${flip_y_axis ? "4.250" : "-4.250"},bottom,${expectedRotation}`,
+    )
+    expect(input).toEqual(original)
+  })
 }

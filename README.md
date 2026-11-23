@@ -96,8 +96,36 @@ angle that matches the supplier's unrotated CAD footprint; an explicit zero
 means the two references agree.
 The map applies to the selected supplier for that export.
 
+For JLCPCB bottom-side components, convert the board-view angle to the
+component-view angle, `((360 - rotation) % 360 + 360) % 360`, then add the
+supplier pin-1 alignment offset. A bottom-side 90° part exports 270° before
+supplier adjustment; 0° and 180° are unchanged. Top-side parts and other
+suppliers retain their existing conventions. `flip_y_axis` changes placement
+Y coordinates only.
+
+The [automatic same-board JLCPCB 3D verification](docs/repros/issue-41/README.md)
+uses real C81598/C916374 supplier data, exact generated CSV rows and annotations.
+The helper computes the SOT-23's 180° CAD-frame difference from numbered pads;
+no manual rotation offset is supplied. CLI fabrication export prepares metadata
+for TSX and prebuilt JSON, including stale authored frames in older JSON. Its
+unchanged generated CSV aligns the tested top and bottom placements.
+
+The catalog responses contain no separate factory assembly offset. That remains
+unknown and is diagnosed; CAD alignment does not establish every part's factory
+zero. Native CAD Euler z is also not the final supplier CSV angle. The
+[earlier manually calibrated experiment](docs/repros/issue-41/HISTORICAL.md)
+is retained as history, separate from the automatic verification.
+
+[kicad-jlcpcb-tools](https://github.com/Bouni/kicad-jlcpcb-tools/blob/main/fabrication.py)
+and [Fabrication Toolkit](https://github.com/bennymeg/Fabrication-Toolkit/blob/master/plugins/process.py)
+also convert bottom angles before adding footprint corrections.
+[JLCPCB's file guidance](https://jlcpcb.com/help/article/pick-place-file-for-pcb-assembly)
+defines positive rotations as counterclockwise without specifying the bottom-side rule;
+the linked real preview supplies the fixture-specific evidence here.
+
 If either field is missing, or the frames cannot be related by rotation, the
-converter keeps the PCB rotation **and emits a warning**. Supply
+converter exports the side-adjusted PCB rotation **and emits a warning**; the
+part-specific supplier alignment remains unverified. Supply
 `onRotationWarning` to collect structured diagnostics (designator, PCB component
 ID, supplier, reason and message) instead of logging them. With a callback,
 `missing_supplier_assembly_rotation` identifies orientation-sensitive parts

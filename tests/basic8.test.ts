@@ -2,7 +2,7 @@ import { expect, test } from "bun:test"
 import { convertCircuitJsonToPickAndPlaceRows } from "../src"
 import { sampleSoup } from "./fixtures/basic"
 
-test("preserves rotation when semantic pin-1 frames cannot be rotated into each other", () => {
+test("converts the side angle when semantic pin-1 frames cannot be rotated into each other", () => {
   const incompatibleOrientationSoup = sampleSoup.map((element) => {
     if (element.type !== "pcb_component") return element
     return {
@@ -18,5 +18,5 @@ test("preserves rotation when semantic pin-1 frames cannot be rotated into each 
     convertCircuitJsonToPickAndPlaceRows(incompatibleOrientationSoup, {
       supplier: "jlcpcb",
     }).map((row) => row.rotation),
-  ).toEqual([0, 90])
+  ).toEqual([0, 270])
 })

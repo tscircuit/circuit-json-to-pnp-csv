@@ -21,7 +21,7 @@ const unresolvedCases = [
   },
 ] as const
 for (const { reason, metadata } of unresolvedCases) {
-  test.failing(`component-view fallback still diagnoses ${reason}`, () => {
+  test(`component-view fallback still diagnoses ${reason}`, () => {
     const warnings: PickAndPlaceRotationWarning[] = []
     const opts = {
       supplier: "jlcpcb" as const,

@@ -66,10 +66,18 @@ const getPickAndPlaceRotation = (
   const { supplier } = opts
   if (!supplier) return pcbComponent.rotation
 
+  // JLCPCB bottom angles run opposite to the authored PCB angle.
+  // The issue-41 diode/SOT-23 A/B captures check this with supplier-zero controls.
+  // Convert the side angle before applying the supplier's local-frame offset.
+  const rotation =
+    supplier === "jlcpcb" && pcbComponent.layer === "bottom"
+      ? normalizeRotation(-pcbComponent.rotation)
+      : pcbComponent.rotation
+
   const unresolved = (
     reason: PickAndPlaceRotationWarning["reason"],
   ): number => {
-    const message = `${designator}: cannot verify ${supplier} pick-and-place rotation (${reason}); PCB rotation ${pcbComponent.rotation} is unverified.`
+    const message = `${designator}: cannot verify ${supplier} pick-and-place rotation (${reason}); exporting unverified rotation ${rotation} from PCB rotation ${pcbComponent.rotation}.`
     if (opts.requireSupplierRotation) throw new Error(message)
     const warning = {
       designator,
@@ -80,7 +88,7 @@ const getPickAndPlaceRotation = (
     }
     if (opts.onRotationWarning) opts.onRotationWarning(warning)
     else console.warn(message)
-    return pcbComponent.rotation
+    return rotation
   }
 
   if (!pcbComponent.pin1_location) return unresolved("missing_pin1_location")
@@ -95,7 +103,7 @@ const getPickAndPlaceRotation = (
   if (rotationAdjustment === null)
     return unresolved("incompatible_pin1_locations")
 
-  const cadRotation = pcbComponent.rotation + rotationAdjustment
+  const cadRotation = rotation + rotationAdjustment
   const assemblyOffset =
     pcbComponent.supplier_assembly_rotation_offset_map?.[supplier]
   if (assemblyOffset !== undefined && Number.isFinite(assemblyOffset)) {

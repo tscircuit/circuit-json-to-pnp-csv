@@ -22,7 +22,7 @@ test("adjusts top and bottom rotations for the selected supplier", () => {
     convertCircuitJsonToPickAndPlaceRows(orientationAwareSoup, {
       supplier: "jlcpcb",
     }).map((row) => row.rotation),
-  ).toEqual([270, 0])
+  ).toEqual([270, 180])
   expect(
     convertCircuitJsonToPickAndPlaceRows(orientationAwareSoup, {
       supplier: "pcbway",
@@ -32,5 +32,5 @@ test("adjusts top and bottom rotations for the selected supplier", () => {
     convertCircuitJsonToPickAndPlaceCsv(orientationAwareSoup, {
       supplier: "jlcpcb",
     }),
-  ).toContain("C1,30.000,40.000,bottom,0")
+  ).toContain("C1,30.000,40.000,bottom,180")
 })
