@@ -36,7 +36,7 @@ jobs:
           npm pack --pack-destination "$consumer_dir"
           cp tests/assets/nine-key-keyboard.json "$consumer_dir/circuit.json"
           cd "$consumer_dir"
-          npm install ./circuit-json-to-pnp-csv-*.tgz circuit-json@0.0.520
+          npm install ./circuit-json-to-pnp-csv-*.tgz circuit-json@0.0.520 @tscircuit/circuit-json-util@0.0.120
           node --input-type=module <<'JS'
           import assert from "node:assert/strict"
           import { readFileSync } from "node:fs"
