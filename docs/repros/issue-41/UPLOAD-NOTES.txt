@@ -1,0 +1,26 @@
+IMPORTANT: #43 is a side-angle fix, not a complete automatic supplier-correct export.
+The successful calibrated A/B below used an explicit +180-degree SOT-23 offset.
+
+A separate 2026-11-23 run uploaded CPL-actual-exporter.csv directly from the built #43 converter on the original reporter JSON. No CSV or orientation metadata edits. SHA-256: 7c8afcde37f5bb98ab67cf1e28329cbe6633cda1ab0912ad41c054b268a02e6c.
+Actual preview: D4 corrected; SOT-23 leads still misaligned. Eight missing-supplier-metadata warnings. The JSON has no selected supplier part numbers; the metadata helper changes nothing.
+See actual-exporter-provenance.json and jlcpcb-actual-exporter.png. No order/payment submitted. Neither PR merged.
+
+Public issue #41 reproduction. No order or purchase is authorized or submitted.
+
+Actual authenticated JLCPCB A/B preview completed 2026-11-23.
+Gerbers: 24 x 16 mm, two layers. Standard assembly, Both Sides.
+BOM matched C81598 (1N4148W SOD-123) and C916374 (MMBT3904 SOT-23).
+These supplier IDs are experiment selections, not reporter-supplied IDs.
+
+Raw CPL-main/proposed differ only in D4/U4: 90 versus 270.
+The selected SOT-23 model needs a +180 degree supplier-zero correction.
+CPL-main-U-offset-180.csv and CPL-proposed-U-offset-180.csv apply that SAME correction to EVERY U row on BOTH sides; D rows keep offset 0.
+Only the two rotated-bottom angles differ in the calibrated A/B pair.
+Main calibrated: D4=90, U4=270. Proposed calibrated: D4=270, U4=90.
+Main reverses D4 cathode / U4 lead side. Proposed aligns both. Top and bottom-zero controls align in both.
+Raw U4 alone is misleading because a side error can cancel a missing supplier-zero correction.
+
+No manual component rotation, translation or auto-alignment was used in JLCPCB.
+Viewer initially blank; switching 2D then 3D restored the actual models.
+Unaltered captures, annotated 3D comparison, exact rows and procedure: README.md.
+This verifies the selected preview fixture, not every part or manufactured boards.

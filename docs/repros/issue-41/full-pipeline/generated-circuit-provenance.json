@@ -1,0 +1,97 @@
+{
+  "generation": "generateCircuitJson from CLI with default parts engine, enabled orientation analysis, no angle/offset overrides",
+  "sha256": "d538350bc9e4a9a86d0b091b408461346ad19cc0f25a837c75f15c9d0865c787",
+  "requests": [
+    "https://easyeda.com/api/components/search",
+    "https://easyeda.com/api/components/4ac5454d45b7425584a4f05138dfd071?version=6.4.7&uuid=4ac5454d45b7425584a4f05138dfd071&datastrid=",
+    "https://modelcdn.tscircuit.com/easyeda_models/assets/C916374.obj?uuid=d777607a152f4f3aac9bb0d0c14ed6fd",
+    "https://easyeda.com/api/components/search",
+    "https://easyeda.com/api/components/search",
+    "https://easyeda.com/api/components/4ac5454d45b7425584a4f05138dfd071?version=6.4.7&uuid=4ac5454d45b7425584a4f05138dfd071&datastrid=",
+    "https://easyeda.com/api/components/4f3ab571bad286ee7cb84c878c7feb74?version=6.4.7&uuid=4f3ab571bad286ee7cb84c878c7feb74&datastrid=",
+    "https://modelcdn.tscircuit.com/easyeda_models/assets/C916374.obj?uuid=d777607a152f4f3aac9bb0d0c14ed6fd",
+    "https://modelcdn.tscircuit.com/easyeda_models/assets/C81598.obj?uuid=114f2449d65947c2a2476b7fb75383eb"
+  ],
+  "frames": [
+    {
+      "name": "D1",
+      "layer": "top",
+      "rotation": 0,
+      "local": "topside_left",
+      "supplier": {
+        "jlcpcb": "topside_left"
+      },
+      "assembly": null
+    },
+    {
+      "name": "D2",
+      "layer": "top",
+      "rotation": 90,
+      "local": "topside_left",
+      "supplier": {
+        "jlcpcb": "topside_left"
+      },
+      "assembly": null
+    },
+    {
+      "name": "D3",
+      "layer": "bottom",
+      "rotation": 0,
+      "local": "topside_left",
+      "supplier": {
+        "jlcpcb": "topside_left"
+      },
+      "assembly": null
+    },
+    {
+      "name": "D4",
+      "layer": "bottom",
+      "rotation": 90,
+      "local": "topside_left",
+      "supplier": {
+        "jlcpcb": "topside_left"
+      },
+      "assembly": null
+    },
+    {
+      "name": "U1",
+      "layer": "top",
+      "rotation": 0,
+      "local": "leftside_top",
+      "supplier": {
+        "jlcpcb": "rightside_bottom"
+      },
+      "assembly": null
+    },
+    {
+      "name": "U2",
+      "layer": "top",
+      "rotation": 90,
+      "local": "leftside_top",
+      "supplier": {
+        "jlcpcb": "rightside_bottom"
+      },
+      "assembly": null
+    },
+    {
+      "name": "U3",
+      "layer": "bottom",
+      "rotation": 0,
+      "local": "leftside_top",
+      "supplier": {
+        "jlcpcb": "rightside_bottom"
+      },
+      "assembly": null
+    },
+    {
+      "name": "U4",
+      "layer": "bottom",
+      "rotation": 90,
+      "local": "leftside_top",
+      "supplier": {
+        "jlcpcb": "rightside_bottom"
+      },
+      "assembly": null
+    }
+  ]
+}

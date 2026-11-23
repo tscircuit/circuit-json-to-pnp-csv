@@ -1,0 +1,36 @@
+{
+  "captured_date": "2026-11-23",
+  "site": "https://cart.jlcpcb.com",
+  "viewer": "JLCPCB PCBA Viewer, 3D mode",
+  "board_mm": [
+    24,
+    16
+  ],
+  "supplier_models": {
+    "D": "C81598",
+    "U": "C916374"
+  },
+  "manual_component_rotation_or_translation": false,
+  "no_order_or_payment": true,
+  "files": {
+    "raw-main-bottom.jpg": "7f00ffeae8990fdc0e9a2be297a1e04b431ee4ba1fdff70aeabfbadacdee21de",
+    "raw-proposed-bottom.jpg": "3856b00d852cb66f7384baf46d6cfa993ecd93ab47c116a1629e3b46742110a7",
+    "raw-top.jpg": "6f4a116334262ec124282aa68535efc8e078777d12b1fc8b5041bb1726657d5a",
+    "calibrated-main-bottom.jpg": "12823241e4c8127ee13ca60269f1c572956304d8eb93878da92ee6598a074761",
+    "calibrated-proposed-bottom.jpg": "fc7fd2baa9f42426e22a56e34bd8be1159c3b65fcfe514cca85a05e3d2600b9d",
+    "calibrated-main-top.jpg": "1febba8fbcc3dbebdd5025b6b1688d636c5b350dde70347ed6205d95f94a9b88",
+    "calibrated-proposed-top.jpg": "1febba8fbcc3dbebdd5025b6b1688d636c5b350dde70347ed6205d95f94a9b88",
+    "main-calibrated-upload.jpg": "0e90355307c7ab5247a55849ab4e985d4c650583168e06a0ee469b3e7f75894d",
+    "proposed-calibrated-upload.jpg": "62b3af9825db36e88eb05c6f96cec142e3305ad86fda9e3643f498126fb3ca2a",
+    "actual-exporter-top.jpg": "17fd6faa3506a34df2fe139586456fb2b0a96448847deb309045aca15cd98ddf",
+    "actual-exporter-bottom.jpg": "60075f1a0218082f41dd265352ce9d1163fe8df397d39c2aed6c4dfea3333d51",
+    "actual-exporter-upload.jpg": "aea24b2ab4ed89ba45a46347d65822f6d5557bc7ca69e9a9608876708ddc430c"
+  },
+  "unchanged_exporter_verification": {
+    "commit": "303524ddbb09a0f98b48a940aae2eb6b87e1089e",
+    "csv_sha256": "7c8afcde37f5bb98ab67cf1e28329cbe6633cda1ab0912ad41c054b268a02e6c",
+    "csv_postprocessing": false,
+    "input_orientation_edits": false,
+    "outcome": "side angle corrected for D4; selected SOT-23 still misaligned without supplier metadata"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "input": "selected-original.circuit.json",
+  "input_sha256": "ba581d6336eb986aff9ed8807f672a5138e540ae2a9d245334f6da378441e835",
+  "input_change_from_reporter": "selected supplier part numbers only; original geometry, angles and stale cached pin1_location values preserved",
+  "input_mutated": false,
+  "exporter_preview_commit": "68c7e297f48b2e0031af5854e3c3a29e7b89298f",
+  "supplier_data": "CLI default parts engine; C81598 and C916374",
+  "csv_postprocessing": false,
+  "output_csv_sha256": "a174e597838bee42edb4a260dc805e2f84ce4eb6ea9a5546a4c0c01d473f6361",
+  "output_equals_already_verified_jlcpcb_upload": true
+}

@@ -25,7 +25,10 @@
     "tscircuit": "^0.0.3030",
     "tsup": "^8.3.0",
     "@tscircuit/circuit-json-util": "^0.0.120",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "circuit-json-to-gltf": "0.0.151",
+    "poppygl": "0.0.37",
+    "@resvg/resvg-js": "2.6.2"
   },
   "peerDependencies": {
     "@tscircuit/soup-util": "*",

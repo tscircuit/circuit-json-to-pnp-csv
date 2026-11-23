@@ -1,0 +1,73 @@
+{
+  "exporter_commit": "303524ddbb09a0f98b48a940aae2eb6b87e1089e",
+  "exporter_entrypoint": "dist/index.js",
+  "input": "reporter.circuit.json, unmodified from issue attachment",
+  "input_sha256": "7b2fc48609fa082f3aa874cd85e5638cafbc880c9d5437e17cab12cf419631d6",
+  "csv_file": "CPL-actual-exporter.csv",
+  "csv_sha256": "7c8afcde37f5bb98ab67cf1e28329cbe6633cda1ab0912ad41c054b268a02e6c",
+  "options": {
+    "supplier": "jlcpcb"
+  },
+  "csv_postprocessing": false,
+  "input_mutated": false,
+  "metadata_helper_changes_without_supplier_part_numbers": false,
+  "warnings": [
+    {
+      "designator": "D1",
+      "pcb_component_id": "pcb_component_0",
+      "supplier": "jlcpcb",
+      "reason": "missing_supplier_pin1_location",
+      "message": "D1: cannot verify jlcpcb pick-and-place rotation (missing_supplier_pin1_location); exporting unverified rotation 0 from PCB rotation 0."
+    },
+    {
+      "designator": "D2",
+      "pcb_component_id": "pcb_component_1",
+      "supplier": "jlcpcb",
+      "reason": "missing_supplier_pin1_location",
+      "message": "D2: cannot verify jlcpcb pick-and-place rotation (missing_supplier_pin1_location); exporting unverified rotation 90 from PCB rotation 90."
+    },
+    {
+      "designator": "D3",
+      "pcb_component_id": "pcb_component_2",
+      "supplier": "jlcpcb",
+      "reason": "missing_supplier_pin1_location",
+      "message": "D3: cannot verify jlcpcb pick-and-place rotation (missing_supplier_pin1_location); exporting unverified rotation 0 from PCB rotation 0."
+    },
+    {
+      "designator": "D4",
+      "pcb_component_id": "pcb_component_3",
+      "supplier": "jlcpcb",
+      "reason": "missing_supplier_pin1_location",
+      "message": "D4: cannot verify jlcpcb pick-and-place rotation (missing_supplier_pin1_location); exporting unverified rotation 270 from PCB rotation 90."
+    },
+    {
+      "designator": "U1",
+      "pcb_component_id": "pcb_component_4",
+      "supplier": "jlcpcb",
+      "reason": "missing_supplier_pin1_location",
+      "message": "U1: cannot verify jlcpcb pick-and-place rotation (missing_supplier_pin1_location); exporting unverified rotation 0 from PCB rotation 0."
+    },
+    {
+      "designator": "U2",
+      "pcb_component_id": "pcb_component_5",
+      "supplier": "jlcpcb",
+      "reason": "missing_supplier_pin1_location",
+      "message": "U2: cannot verify jlcpcb pick-and-place rotation (missing_supplier_pin1_location); exporting unverified rotation 90 from PCB rotation 90."
+    },
+    {
+      "designator": "U3",
+      "pcb_component_id": "pcb_component_6",
+      "supplier": "jlcpcb",
+      "reason": "missing_supplier_pin1_location",
+      "message": "U3: cannot verify jlcpcb pick-and-place rotation (missing_supplier_pin1_location); exporting unverified rotation 0 from PCB rotation 0."
+    },
+    {
+      "designator": "U4",
+      "pcb_component_id": "pcb_component_7",
+      "supplier": "jlcpcb",
+      "reason": "missing_supplier_pin1_location",
+      "message": "U4: cannot verify jlcpcb pick-and-place rotation (missing_supplier_pin1_location); exporting unverified rotation 270 from PCB rotation 90."
+    }
+  ],
+  "csv": "Designator,Mid X,Mid Y,Layer,Rotation\r\nD1,-9.000,4.000,top,0\r\nD2,-3.000,4.000,top,90\r\nD3,3.000,4.000,bottom,0\r\nD4,9.000,4.000,bottom,270\r\nU1,-9.000,-4.000,top,0\r\nU2,-3.000,-4.000,top,90\r\nU3,3.000,-4.000,bottom,0\r\nU4,9.000,-4.000,bottom,270"
+}

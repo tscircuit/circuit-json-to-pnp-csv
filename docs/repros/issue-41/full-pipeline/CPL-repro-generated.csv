@@ -1,0 +1,9 @@
+Designator,Mid X,Mid Y,Layer,Rotation
+D1,-9.000,4.000,top,0
+D2,-3.000,4.000,top,90
+D3,3.000,4.000,bottom,0
+D4,9.000,4.000,bottom,90
+U1,-9.000,-4.000,top,180
+U2,-3.000,-4.000,top,270
+U3,3.000,-4.000,bottom,180
+U4,9.000,-4.000,bottom,270
