@@ -144,6 +144,12 @@ complete metadata works offline. It deduplicates supplier lookups and rejects
 unresolved or incompatible frames with component-specific errors. It does not
 move geometry, reroute, or mutate the input.
 
+When fetching supplier geometry for a diode or LED, preparation also compares
+the authored and supplier pin-1 anode/cathode aliases. Opposite known polarities
+are rejected even if the numbered pin frames match. Missing or ambiguous
+polarity aliases do not establish a polarity check; prepopulated orientation
+metadata remains trusted and can still be used offline.
+
 Qualification covers fitted components with supplier part numbers, excluding DNP
 parts and test points. Bottom-side components need explicit `pin1_location`
 metadata because prebuilt JSON does not record the original footprint layer
