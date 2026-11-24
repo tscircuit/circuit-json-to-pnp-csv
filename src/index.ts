@@ -113,7 +113,9 @@ export const convertCircuitJsonToPickAndPlaceRows = (
         mid_x: placementPosition.x,
         mid_y: placementPosition.y * (opts.flip_y_axis ? -1 : 1),
         layer: element.layer,
-        rotation: getPickAndPlaceRotation(element, designator, opts),
+        rotation: normalizeRotation(
+          getPickAndPlaceRotation(element, designator, opts),
+        ),
       })
     }
   }
